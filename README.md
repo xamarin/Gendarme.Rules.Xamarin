@@ -14,6 +14,12 @@ rules assemblies are included for convenience.
 
 The `Gendarme.Rules.Xamarin.dll` assembly will be output into `bin`.
 
-The run: `mono bin/gendarme.exe [Some.Assembly.To.Analyze.dll]`.
+To run:
 
-For example, you might run something like: `mono gendarme.exe --set xamarin --severity critical --html ~/Desktop/Gendarme-Report.html /Users/Demo/Projects/Test/bin/Some.Assembly.To.Analyze.dll`
+`mono bin/gendarme.exe [Some.Assembly.To.Analyze.dll]`
+
+For example, to run only the Gendarme.Rules.Xamarin rules, and have the
+report show only `high` and `critical` violations saved to an HTML file on
+your Desktop, issue:
+
+`mono gendarme.exe --set xamarin --severity high --html ~/Desktop/Gendarme-Report.html /Users/Demo/Projects/Test/bin/Some.Assembly.To.Analyze.dll`
