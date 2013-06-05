@@ -17,20 +17,27 @@ namespace Gendarme.Rules.Xamarin
 			// Look for the TargetPlatform attribute, which indicates
 			// .NET 4.0 support. This is only available in XI 6.3+.
 			// e.g. TargetFramework ("MonoTouch,Version=v4.0", DisplayName = "MonoTouch")
-			var result = assembly.CustomAttributes.Any (attrib => 
-			                                            attrib.AttributeType.Name == "TargetFrameworkAttribute"
-			                                            && attrib.ConstructorArguments.Any (carg => carg.Value.Equals("MonoTouch,Version=v4.0"))
-			                                            );
+			// This is seen as warning MT0011.
+			var result = CheckForMT0011 (assembly);
+			if (result)
+				Runner.Report (assembly, Severity.Critical, Confidence.High, "This assembly targets MonoTouch,Version=v4.0, which is not a stable release (MT0011).");
 
 			// Now we attempt to detect the use of type/members that were not available in MonoTouch 6.2.x.
 			// There's no point in checking if we already know we have a violation.
 			if (!result && TargetsPrereleaseXamarinIOS.CheckForMT2002 (assembly))
+			{
 				result = true;
-
-			if (result)	
-				Runner.Report (assembly, Severity.Critical, Confidence.High, "This assembly was not compiled using Xamarin.iOS Stable.");
+				Runner.Report (assembly, Severity.Critical, Confidence.High, "This assembly was not compiled using Xamarin.iOS Stable (MT2002).");
+			}
 
 			return result ? RuleResult.Failure : RuleResult.Success;
+		}
+
+		static bool CheckForMT0011 (AssemblyDefinition assembly)
+		{
+			return assembly.CustomAttributes.Any (attrib => attrib.AttributeType.Name == "TargetFrameworkAttribute" 
+                      && attrib.ConstructorArguments.Any (carg => carg.Value.Equals ("MonoTouch,Version=v4.0"))
+                      );
 		}
 
 		/// <summary>
