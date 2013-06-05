@@ -1,0 +1,1067 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Gendarme.Rules.Correctness</name>
+    </assembly>
+    <members>
+        <member name="T:Gendarme.Rules.Correctness.AttributeStringLiteralsShouldParseCorrectlyRule">
+            <summary>
+            As attributes are used at compile time, only constants can
+            be passed to constructors. This can lead to runtime errors for
+            things like malformed URI strings.
+            This rule checks attributes with the following types, represented as
+            a string, and validates the string value:
+            <list type="bullet"><item><description>Version</description></item><item><description>Guid</description></item><item><description>Uri</description></item></list></summary>
+            <example>
+            Bad example:
+            <code>
+            [assembly: AssemblyFileVersion ("fooo")]
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            [assembly: AssemblyFileVersion ("0.0.1.*")]
+            </code></example>
+            <remarks>This rule is available since Gendarme 2.2</remarks>
+        </member>
+        <member name="T:Gendarme.Rules.Correctness.AvoidCodeWithSideEffectsInConditionalCodeRule">
+            <summary>
+            A number of System methods are conditionally compiled on #defines.
+            For example, System.Diagnostics.Trace::Assert is a no-op if TRACE
+            is not defined and System.Diagnostics.Debug::Write is a no-op if DEBUG
+            is not defined.
+            When calling a conditionally compiled method care should be taken to
+            avoid executing code which has visible side effects. The reason is that
+            the state of the program should generally not depend on the value of
+            a define. If it does it is all too easy to create code which, for example,
+            works in DEBUG but fails or behaves differently in release.
+            This rule flags expressions used to construct the arguments to a
+            conditional call if those expressions write to a local variable, method
+            argument, or field. This includes pre/postfix increment and decrement
+            expressions and assignment expressions.
+            </summary>
+            <example>
+            Bad example:
+            <code>
+            internal sealed class Helpers {
+            	public string StripHex (string text)
+            	{
+            		int i = 0;
+            		// This code will work in debug, but not in release.
+            		Debug.Assert (text [i++] == '0');
+            		Debug.Assert (text [i++] == 'x');
+            		return text.Substring (i);
+            	}
+            }
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            internal sealed class Helpers {
+            	public string StripHex (string text)
+            	{
+            		Debug.Assert (text [0] == '0');
+            		Debug.Assert (text [1] == 'x');
+            		return text.Substring (2);
+            	}
+            }
+            </code></example>
+        </member>
+        <member name="T:Gendarme.Rules.Correctness.AvoidConstructorsInStaticTypesRule">
+            <summary>
+            This rule checks for types that contain only static members and fires if the type
+            contains a visible
+            instance constructor. This was a common mistake in the 1.x framework
+            because C# adds a default, public, constructor if no other constructors are provided.
+            Code using the framework 2.0 (and later) should change this type, if possible, into a
+            static type.
+            </summary>
+            <example>
+            Bad example:
+            <code>
+            // it is possible to instantiate this class since the
+            // C# compiler adds a default, public, constructor
+            public class Class {
+            	public static void Method ()
+            	{
+            	}
+            }
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            public class Class {
+            	// this class cannot be instantiated
+            	private Class ()
+            	{
+            	}
+            	public static void Method ()
+            	{
+            	}
+            }
+            </code></example>
+        </member>
+        <member name="T:Gendarme.Rules.Correctness.AvoidFloatingPointEqualityRule">
+            <summary>
+            In general floating point numbers cannot be usefully compared using the equality and
+            inequality operators. This is because floating point numbers are inexact and most floating
+            point operations introduce errors which can accumulate if multiple operations are performed.
+            This rule will fire if [in]equality comparisons are used with <c>Single</c> or <c>Double</c>
+            types. In general such comparisons should be done with some sort of epsilon test instead
+            of a simple compare (see the code below).
+            For more information:
+            <list><item><description>[http://www.cygnus-software.com/papers/comparingfloats/comparingfloats.htm Floating Point Comparison (General Problem)]</description></item><item><description>[http://www.yoda.arachsys.com/csharp/floatingpoint.html Another article about floating point comparison (more .NET adapted)]</description></item></list></summary>
+            <example>
+            Bad example:
+            <code>
+            // This may or may not work as expected. In particular, if the values are from
+            // high precision real world measurements or different algorithmic sources then
+            // it's likely that they will have small errors and an exact inequality test will not
+            // work as expected.
+            public static bool NearlyEqual (double [] lhs, double [] rhs)
+            {
+            	if (ReferenceEquals (lhs, rhs)) {
+            		return true;
+            	}
+            	if (lhs.Length != rhs.Length) {
+            		return false;
+            	}
+            	for (int i = 0; i &lt; lhs.Length; ++i) {
+            		if (lhs [i] != rhs [i]) {
+            			return false;
+            		}
+            	}
+            	return true;
+            }
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            // This will normally work fine. However it will not work with infinity (because
+            // infinity - infinity is a NAN). It's also difficult to use if the values may
+            // have very large or very small magnitudes (because the epsilon value must
+            // be scaled accordingly).
+            public static bool NearlyEqual (double [] lhs, double [] rhs, double epsilon)
+            {
+            	if (ReferenceEquals (lhs, rhs)) {
+            		return true;
+            	}
+            	if (lhs.Length != rhs.Length) {
+            		return false;
+            	}
+            	for (int i = 0; i &lt; lhs.Length; ++i) {
+            		if (Math.Abs (lhs [i] - rhs [i]) &gt; epsilon) {
+            			return false;
+            			}
+            	}
+            	return true;
+            }
+            </code></example>
+            <remarks>Prior to Gendarme 2.2 this rule was named FloatComparisonRule.</remarks>
+        </member>
+        <member name="T:Gendarme.Rules.Correctness.AvoidMethodsWithSideEffectsInConditionalCodeRule">
+            <summary>
+            A number of System methods are conditionally compiled on #defines.
+            For example, System.Diagnostics.Trace::Assert is a no-op if TRACE
+            is not defined and System.Diagnostics.Debug::Write is a no-op if DEBUG
+            is not defined.
+            When calling a conditionally compiled method care should be taken to
+            avoid executing code which has visible side effects. The reason is that
+            the state of the program should generally not depend on the value of
+            a define. If it does it is all too easy to create code which, for example,
+            works in DEBUG but fails or behaves differently in release.
+            Methods which have no visible side effects are termed pure methods.
+            Certain System methods and delegates (such as System.String and
+            System.Predicate&lt;T&gt;) are assumed to be pure. If you want to
+            use a method which is not known to be pure in a conditionally compiled
+            method call then you'll need to decorate it with PureAttribute (see the
+            examples below).
+            Note that it is OK to disable this rule for defects where the define will
+            always be set (now and in the future), if the program's state really
+            should be affected by the define (e.g. a LINUX define), or the impure
+            method should be decorated with PureAttribute but it is not under
+            your control.
+            </summary>
+            <example>
+            Bad example:
+            <code>
+            using System.Collections.Generic;
+            using System.Linq;
+            using System.Runtime.Diagnostics;
+            internal sealed class Worker {
+            	private Dictionary&lt;string, Job&gt; jobs;
+            	private bool IsValid (Job job)
+            	{
+            		return job != null &amp;&amp; job.PartId &gt; 0;
+            	}
+            	private void Process (string name, Job job)
+            	{
+            		// This is OK because IsValid has no side effects (although the rule
+            		// won't know that unless we decorate IsValid with PureAttribute).
+            		Trace.Assert (IsValid (job), job + " is not valid");
+            		// This is potentially very bad: if release builds now (or in the future)
+            		// don't define TRACE the job won't be removed from our list in release.
+            		Trace.Assert (jobs.Remove (job), "couldn't find job " + name);
+            		job.Execute ();
+            	}
+            }
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            using System.Collections.Generic;
+            using System.Linq;
+            using System.Runtime.Diagnostics;
+            // note: in FX4 (and later) this attribute is defined in System.Runtime.Diagnostics.Contracts
+            [Serializable]
+            [AttributeUsage (AttributeTargets.Method | AttributeTargets.Delegate, AllowMultiple = false)]
+            public sealed class PureAttribute : Attribute {
+            }
+            internal sealed class Worker {
+            	private Dictionary&lt;string, Job&gt; jobs;
+            	[Pure]
+            	private bool IsValid (Job job)
+            	{
+            		return job != null &amp;&amp; job.PartId &gt; 0;
+            	}
+            	private void Process (string name, Job job)
+            	{
+            		// IsValid is decorated with PureAttribute so the rule won't complain
+            		// when we use it within Trace.Assert.
+            		Trace.Assert (IsValid (job), job + " is not valid");
+            		bool removed = jobs.Remove (job);
+            		Trace.Assert (removed, "couldn't find job " + name);
+            		job.Execute ();
+            	}
+            }
+            </code></example>
+        </member>
+        <member name="T:Gendarme.Rules.Correctness.DeclareEventsExplicitlyRule">
+            <summary>
+            This rule detect is an event handler was declared without the <c>event</c>
+            keyword, making the declaration a simple field in its type. Such occurances
+            are likely a typo and should be fixed.
+            </summary>
+            <example>
+            Bad example:
+            <code>
+            public class EventLess {
+            	public static EventHandler&lt;EventArgs&gt; MyEvent;
+            }
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            public class Event {
+            	public static event EventHandler&lt;EventArgs&gt; MyEvent;
+            }
+            </code></example>
+        </member>
+        <member name="T:Gendarme.Rules.Correctness.DoNotRecurseInEqualityRule">
+            <summary>
+            An operator== or operator!= method is calling itself recursively. This is
+            usually caused by neglecting to cast an argument to System.Object before
+            comparing it to null.
+            </summary>
+            <example>
+            Bad example:
+            <code>
+            	public static bool operator== (Customer lhs, Customer rhs)
+            	{
+            		if (object.ReferenceEquals (lhs, rhs)) {
+            			return true;
+            		}
+            		if (lhs == null || rhs == null) {
+            			return false;
+            		}
+            		return lhs.name == rhs.name &amp;&amp; lhs.address == rhs.address;
+            	}
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            	public static bool operator== (Customer lhs, Customer rhs)
+            	{
+            		if (object.ReferenceEquals (lhs, rhs)) {
+            			return true;
+            		}
+            		if ((object) lhs == null || (object) rhs == null) {
+            			return false;
+            		}
+            		return lhs.name == rhs.name &amp;&amp; lhs.address == rhs.address;
+            	}
+            </code></example>
+            <remarks>This rule is available since Gendarme 2.4</remarks>
+        </member>
+        <member name="T:Gendarme.Rules.Correctness.BadRecursiveInvocationRule">
+            <summary>
+            This rule checks for a few common scenarios where a method may be infinitely
+            recursive. For example, getter properties which call themselves or methods
+            with no conditional code which call themselves (instead of the base method).
+            </summary>
+            <example>
+            Bad example:
+            <code>
+            string CurrentDirectory {
+            	get {
+            		return CurrentDirectory;
+            	}
+            }
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            string CurrentDirectory {
+            	get {
+            		return base.CurrentDirectory;
+            	}
+            }
+            </code></example>
+        </member>
+        <member name="T:Gendarme.Rules.Correctness.CallingEqualsWithNullArgRule">
+            <summary>
+            This rule checks for methods that call <c>Equals</c> with a <c>null</c> actual parameter.
+            Such calls should always return <c>false</c>.
+            </summary>
+            <example>
+            Bad example:
+            <code>
+            public void MakeStuff ()
+            {
+            	MyClass myClassInstance = new MyClass ();
+            	MyClass otherClassInstance = null;
+            	Console.WriteLine (myClassInstance.Equals (otherClassInstance));
+            }
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            public void MakeStuff ()
+            {
+            	MyClass myClassInstance = new MyClass ();
+            	MyClass otherClassInstance = new MyClass ();
+            	Console.WriteLine (myClassInstance.Equals (otherClassInstance));
+            }
+            </code></example>
+        </member>
+        <member name="T:Gendarme.Rules.Correctness.CheckParametersNullityInVisibleMethodsRule">
+            <summary>
+            This rule checks if all nullable parameters of visible methods are compared
+            with '''null''' before they get used. This reduce the likelyhood of the runtime
+            throwing a <c>NullReferenceException</c>.
+            </summary>
+            <example>
+            Bad example:
+            <code>
+            [DllImport ("message")]
+            internal static extern byte [] Parse (string s, int length);
+            public bool TryParse (string s, out Message m)
+            {
+            	// is 's' is null then 's.Length' will throw a NullReferenceException
+            	// which a TryParse method should never do
+            	byte [] data = Parse (s, s.Length);
+            	if (data == null) {
+            		m = null;
+            		return false;
+            	}
+            	m = new Message (data);
+            	return true;
+            }
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            [DllImport ("message")]
+            internal static extern byte [] Parse (string s, int length);
+            public bool TryParse (string s, out Message m)
+            {
+            	if (s == null) {
+            		m = null;
+            		return false;
+            	}
+            	byte [] data = Parse (s, s.Length);
+            	if (data == null) {
+            		m = null;
+            		return false;
+            	}
+            	m = new Message (data);
+            	return true;
+            }
+            </code></example>
+            <remarks>This rule is available since Gendarme 2.2</remarks>
+        </member>
+        <member name="T:Gendarme.Rules.Correctness.DisposableFieldsShouldBeDisposedRule">
+            <summary>
+            The rule inspects all fields for disposable types and, if <c>System.IDisposable</c> is
+            implemented, checks that the type's <c>Dispose</c> method does indeed call <c>Dispose</c> on
+            all disposable fields.
+            </summary>
+            <example>
+            Bad example:
+            <code>
+            class DoesNotDisposeMember : IDisposable {
+            	byte[] buffer;
+            	IDisposable field;
+            	public void Dispose ()
+            	{
+            		buffer = null;
+            		// field is not disposed
+            	}
+            }
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            class DisposePattern : IDisposable {
+            	byte[] buffer;
+            	IDisposable field;
+            	bool disposed;
+            	public void Dispose ()
+            	{
+            		Dispose (true);
+            	}
+            	private void Dispose (bool disposing)
+            	{
+            		if (!disposed) {
+            			if (disposing) {
+            				field.Dispose ();
+            			}
+            			buffer = null;
+            			disposed = true;
+            		}
+            	}
+            }
+            </code></example>
+        </member>
+        <member name="T:Gendarme.Rules.Correctness.DoNotRoundIntegersRule">
+            <summary>
+            This rule check for attempts to call <c>System.Math.Round</c>, <c>System.Math.Ceiling</c>, <c>System.Math.Floor</c> or
+            <c>System.Math.Truncate</c> on an integral type. This often indicate a typo in the source code
+            (e.g. wrong variable) or an unnecessary operation.
+            </summary>
+            <example>
+            Bad example:
+            <code>
+            public decimal Compute (int x)
+            {
+            	return Math.Truncate ((decimal) x);
+            }
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            public decimal Compute (int x)
+            {
+            	return (decimal) x;
+            }
+            </code></example>
+        </member>
+        <member name="T:Gendarme.Rules.Correctness.DoNotCompareWithNaNRule">
+            <summary>
+            As defined in IEEE 754 it's impossible to compare any floating-point value, even
+            another <c>NaN</c>, with <c>NaN</c>. Such comparison will always return <c>false</c>
+            (more information on [http://en.wikipedia.org/wiki/NaN wikipedia]). The framework
+            provides methods, <c>Single.IsNaN</c> and <c>Double.IsNaN</c>, to check for
+            <c>NaN</c> values.
+            </summary>
+            <example>
+            Bad example:
+            <code>
+            double d = ComplexCalculation ();
+            if (d == Double.NaN) {
+            	// this will never be reached, even if d is NaN
+            	Console.WriteLine ("No solution exists!");
+            }
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            double d = ComplexCalculation ();
+            if (Double.IsNaN (d)) {
+            	Console.WriteLine ("No solution exists!");
+            }
+            </code></example>
+        </member>
+        <member name="T:Gendarme.Rules.Correctness.EnsureLocalDisposalRule">
+            <summary>
+            This rule checks that disposable locals are always disposed of before the
+            method returns.
+            Use a 'using' statement (or a try/finally block) to guarantee local disposal
+            even in the event an unhandled exception occurs.
+            </summary>
+            <example>
+            Bad example (non-guaranteed disposal):
+            <code>
+            void DecodeFile (string file)
+            {
+            	var stream = new StreamReader (file);
+            	DecodeHeader (stream);
+            	if (!DecodedHeader.HasContent) {
+            		return;
+            	}
+            	DecodeContent (stream);
+            	stream.Dispose ();
+            }
+            </code></example>
+            <example>
+            Good example (non-guaranteed disposal):
+            <code>
+            void DecodeFile (string file)
+            {
+            	using (var stream = new StreamReader (file)) {
+            		DecodeHeader (stream);
+            		if (!DecodedHeader.HasContent) {
+            			return;
+            		}
+            		DecodeContent (stream);
+            	}
+            }
+            </code></example>
+            <example>
+            Bad example (not disposed of / not locally disposed of):
+            <code>
+            void DecodeFile (string file)
+            {
+            	var stream = new StreamReader (file);
+            	Decode (stream);
+            }
+            void Decode (Stream stream)
+            {
+            	/*code to decode the stream*/
+            	stream.Dispose ();
+            }
+            </code></example>
+            <example>
+            Good example (not disposed of / not locally disposed of):
+            <code>
+            void DecodeFile (string file)
+            {
+            	using (var stream = new StreamReader (file)) {
+            		Decode (stream);
+            	}
+            }
+            void Decode (Stream stream)
+            {
+            	/*code to decode the stream*/
+            }
+            </code></example>
+            <remarks>This rule is available since Gendarme 2.4</remarks>
+        </member>
+        <member name="T:Gendarme.Rules.Correctness.FinalizersShouldCallBaseClassFinalizerRule">
+            <summary>
+            This rule is used to warn the developer that a finalizer does not call the base class
+            finalizer. In C#, this is enforced by compiler but some .NET languages (like IL)
+            may allow such behavior.
+            </summary>
+            <example>
+            Bad example (IL):
+            <code>
+            .assembly extern mscorlib
+            {
+            	.ver 1:0:5000:0
+            	.publickeytoken = (B7 7A 5C 56 19 34 E0 89 )
+            }
+            .class public auto ansi beforefieldinit BadFinalizer extends [mscorlib]System.Object
+            {
+            	.method family virtual hidebysig instance void Finalize() cil managed
+            	{
+            		// no base call so rule will fire here
+            	}
+            }
+            </code></example>
+            <example>
+            Good example (C#):
+            <code>
+            public class GoodFinalizer {
+            	~GoodFinalizer ()
+            	{
+            		// C# compiler will insert base.Finalize () call here
+            		// so any compiler-generated code will be valid
+            	}
+            }
+            </code></example>
+        </member>
+        <member name="T:Gendarme.Rules.Correctness.ReviewInconsistentIdentityRule">
+            <summary>
+            This rule checks to see if a type manages its identity in a
+            consistent way. It checks:
+            <list type="bullet"><item><description>Equals methods, relational operators and <c>CompareTo</c>
+            must either use the same set of fields and properties or call a
+            helper method.</description></item><item><description><c>GetHashCode</c> must use the same or a subset of
+            the fields used by the equality methods or call a helper method.</description></item><item><description><c>Clone</c> must use the same or a superset of
+            the fields used by the equality methods or call a helper method.</description></item></list></summary>
+            <remarks>This rule is available since Gendarme 2.4</remarks>
+        </member>
+        <member name="T:Gendarme.Rules.Correctness.MethodCanBeMadeStaticRule">
+            <summary>
+            This rule checks for methods that do not require anything from the current
+            instance. Those methods can be converted into static methods, which helps
+            a bit with performance (the hidden <c>this</c> parameter can be omitted),
+            and clarifies the API.
+            </summary>
+            <example>
+            Bad example:
+            <code>
+            public class Bad {
+            	private int x, y, z;
+            	bool Valid (int value)
+            	{
+            		// no instance members are used
+            		return (value &gt; 0);
+            	}
+            	public int X {
+            		get {
+            			return x;
+            		}
+            		set {
+            			if (!Valid (value)) {
+            				throw ArgumentException ("X");
+            			}
+            			x = value;
+            		}
+            	}
+            	// same for Y and Z
+            }
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            public class Good {
+            	private int x, y, z;
+            	static bool Valid (int value)
+            	{
+            		return (value &gt; 0);
+            	}
+            	// same X (and Y and Z) as before
+            }
+            </code></example>
+        </member>
+        <member name="T:Gendarme.Rules.Correctness.ProvideCorrectArgumentsToFormattingMethodsRule">
+            <summary>
+            This rule checks that the format string used with <c>String.Format</c> matches
+            the other parameters used with the method.
+            </summary>
+            <example>
+            Bad examples:
+            <code>
+            	string s1 = String.Format ("There is nothing to format here!");
+            	// no argument to back {0}
+            	string s2 = String.Format ("Hello {0}!");
+            </code></example>
+            <example>
+            Good examples:
+            <code>
+            	string s1 = "There is nothing to format here!";
+            	string s2 = String.Format ("Hello {0}!", name);
+            </code></example>
+            <remarks>This rule is available since Gendarme 2.2</remarks>
+        </member>
+        <member name="T:Gendarme.Rules.Correctness.ProvideCorrectRegexPatternRule">
+            <summary>
+            This rule verifies that valid regular expression strings are used as arguments.
+            </summary>
+            <example>
+            Bad example:
+            <code>
+            //Invalid end of pattern
+            Regex re = new Regex ("^\\");
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            Regex re = new Regex (@"^\\");
+            </code></example>
+            <example>
+            Bad example:
+            <code>
+            //Unterminated [] set
+            Regex re = new Regex ("([a-z)*");
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            Regex re = new Regex ("([a-z])*");
+            </code></example>
+            <example>
+            Bad example:
+            <code>
+            //Reference to undefined group number 2
+            return Regex.IsMatch (code, @"(\w)-\2");
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            return Regex.IsMatch (code, @"(\w)-\1");
+            </code></example>
+            <remarks>This rule is available since Gendarme 2.4</remarks>
+        </member>
+        <member name="T:Gendarme.Rules.Correctness.ProvideValidXmlStringRule">
+            <summary>
+            This rule verifies that valid XML string arguments are passed as arguments.
+            </summary>
+            <example>
+            Bad example (using LoadXml):
+            <code>
+            XmlDocument doc = new XmlDocument ();
+            doc.LoadXml ("&lt;book&gt;");
+            </code></example>
+            <example>
+            Good example (using LoadXml):
+            <code>
+            XmlDocument doc = new XmlDocument ();
+            doc.LoadXml ("&lt;book /&gt;");
+            </code></example>
+            <example>
+            Bad example (using InnerXml):
+            <code>
+            bookElement.InnerXml = "&lt;author&gt;Robert J. Sawyer&lt;/authr&gt;";
+            </code></example>
+            <example>
+            Good example (using InnerXml):
+            <code>
+            bookElement.InnerXml = "&lt;author&gt;Robert J. Sawyer&lt;/author&gt;";
+            </code></example>
+            <remarks>This rule is available since Gendarme 2.6</remarks>
+        </member>
+        <member name="T:Gendarme.Rules.Correctness.ProvideValidXPathExpressionRule">
+            <summary>
+            This rule verifies that valid XPath expression strings are passed as arguments.
+            </summary>
+            <example>
+            Bad example (node selection):
+            <code>
+            XmlNodeList nodes = document.SelectNodes ("/book[@npages == 100]/@title");
+            </code></example>
+            <example>
+            Good example (node selection):
+            <code>
+            XmlNodeList nodes = document.SelectNodes ("/book[@npages = 100]/@title");
+            </code></example>
+            <example>
+            Bad example (expression compilation):
+            <code>
+            var xpath = XPathExpression.Compile ("/book[@npages == 100]/@title");
+            </code></example>
+            <example>
+            Good example (expression compilation):
+            <code>
+            var xpath = XPathExpression.Compile ("/book[@npages = 100]/@title");
+            </code></example>
+            <remarks>This rule is available since Gendarme 2.6</remarks>
+        </member>
+        <member name="T:Gendarme.Rules.Correctness.ReviewCastOnIntegerDivisionRule">
+            <summary>
+            This rule checks for integral divisions where the result is cast to a floating point
+            type. It's usually best to instead cast an operand to the floating point type so
+            that the result is not truncated.
+            </summary>
+            <example>
+            Bad example:
+            <code>
+            public double Bad (int a, int b)
+            {
+            	// integers are divided, then the result is casted into a double
+            	// i.e. Bad (5, 2) == 2.0d
+            	return a / b;
+            }
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            public double Good (int a, int b)
+            {
+            	// a double is divided by an integer, which result in a double result
+            	// i.e. Good (5, 2) == 2.5d
+            	return (double) a / b;
+            }
+            </code></example>
+            <remarks>This rule is available since Gendarme 2.2</remarks>
+        </member>
+        <member name="T:Gendarme.Rules.Correctness.ReviewCastOnIntegerMultiplicationRule">
+            <summary>
+            This rule checks for integral multiply operations where the result is cast to
+            a larger integral type. It's safer instead to cast an operand to the larger type
+            to minimize the chance of overflow.
+            </summary>
+            <example>
+            Bad example:
+            <code>
+            public long Bad (int a, int b)
+            {
+            	// e.g. Bad (Int32.MaxInt, Int32.MaxInt) == 1
+            	return a * b;
+            }
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            public long Good (int a, int b)
+            {
+            	// e.g. Good (Int32.MaxInt, Int32.MaxInt) == 4611686014132420609
+            	return (long) a * b;
+            }
+            </code></example>
+            <remarks>This rule is available since Gendarme 2.2</remarks>
+        </member>
+        <member name="T:Gendarme.Rules.Correctness.ReviewDoubleAssignmentRule">
+            <summary>
+            This rule checks for variables or fields that are assigned multiple times
+            using the same value. This won't change the value of the variable (or fields)
+            but should be reviewed since it could be a typo that hides a real issue in
+            the code.
+            </summary>
+            <example>
+            Bad example:
+            <code>
+            public class Bad {
+            	private int x, y;
+            	public Bad (int value)
+            	{
+            		// x is assigned twice, but y is not assigned
+            		x = x = value;
+            	}
+            }
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            public class Good {
+            	private int x, y;
+            	public Good (int value)
+            	{
+            		// x = y = value; was the original meaning but since it's confusing...
+            		x = value;
+            		y = value;
+            	}
+            }
+            </code></example>
+            <remarks>This rule is available since Gendarme 2.0</remarks>
+        </member>
+        <member name="T:Gendarme.Rules.Correctness.ReviewSelfAssignmentRule">
+            <summary>
+            This rule checks for variables or fields that are assigned to themselves.
+            This won't change the value of the variable (or fields) but should be reviewed
+            since it could be a typo that hides a real issue in the code.
+            </summary>
+            <example>
+            Bad example:
+            <code>
+            public class Bad {
+            	private int value;
+            	public Bad (int value)
+            	{
+            		// argument is assigned to itself, this.value is unchanged
+            		value = value;
+            	}
+            }
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            public class Good {
+            	private int value;
+            	public Good (int value)
+            	{
+            		this.value = value;
+            	}
+            }
+            </code></example>
+            <remarks>This rule is available since Gendarme 2.0</remarks>
+        </member>
+        <member name="T:Gendarme.Rules.Correctness.ReviewUselessControlFlowRule">
+            <summary>
+            This rule checks for empty blocks that produce useless control flow inside IL.
+            This usually occurs when a block is left incomplete or when a typo is made.
+            </summary>
+            <example>
+            Bad example (empty):
+            <code>
+            if (x == 0) {
+            	// TODO - ever seen such a thing ? ;-)
+            }
+            </code></example>
+            <example>
+            Bad example (typo):
+            <code>
+            if (x == 0); {
+            	Console.WriteLine ("always printed");
+            }
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            if (x == 0) {
+            	Console.WriteLine ("printed only if x == 0");
+            }
+            </code></example>
+            <remarks>This rule is available since Gendarme 2.0</remarks>
+        </member>
+        <member name="T:Gendarme.Rules.Correctness.ReviewUseOfInt64BitsToDoubleRule">
+            <summary>
+            This rule checks for invalid integer to double conversion using the, confusingly named,
+            <c>BitConverter.Int64BitsToDouble</c> method. This method converts the actual bits,
+            i.e. not the value, into a <c>Double</c>. The rule will warn when anything other than an
+            <c>Int64</c> is being used as a parameter to this method.
+            </summary>
+            <example>
+            Bad example:
+            <code>
+            public double GetRadians (int degrees)
+            {
+            	return BitConverter.Int64BitsToDouble (degrees) * Math.PI / 180.0d;
+            }
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            public double GetRadians (int degree)
+            {
+            	return degrees * Math.PI / 180.0d;
+            }
+            </code></example>
+            <remarks>This rule is available since Gendarme 2.0</remarks>
+        </member>
+        <member name="T:Gendarme.Rules.Correctness.ReviewUseOfModuloOneOnIntegersRule">
+            <summary>
+            This rule checks for a modulo one (1) operation on an integral type. This is most
+            likely a typo since the result is always 0. This usually happen when someone confuses
+            a bitwise operation with a remainder.
+            </summary>
+            <example>
+            Bad example:
+            <code>
+            public bool IsOdd (int i)
+            {
+            	return ((i % 1) == 1);
+            }
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            public bool IsOdd (int i)
+            {
+            	return ((i % 2) != 0); // or ((x &amp; 1) == 1)
+            }
+            </code></example>
+            <remarks>This rule is available since Gendarme 2.0</remarks>
+        </member>
+        <member name="T:Gendarme.Rules.Correctness.TypesWithDisposableFieldsShouldBeDisposableRule">
+            <summary>
+            This rule will fire if a type contains disposable fields, i.e. fields whose types implements
+            <c>System.IDisposable</c>, but where the type itself does not implement <c>System.IDisposable</c>.
+            The rule will not report types that are not assigning themselves new instances to the fields.
+            </summary>
+            <example>
+            Bad examples:
+            <code>
+            class DoesNotImplementIDisposable {
+            	IDisposable field;
+            }
+            class AbstractDispose : IDisposable {
+            	IDisposable field;
+            	// the field should be disposed in the type that declares it
+            	public abstract void Dispose ();
+            }
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            class Dispose : IDisposable {
+            	IDisposable field;
+            	public void Dispose ()
+            	{
+            		field.Dispose ();
+            	}
+            }
+            </code></example>
+        </member>
+        <member name="T:Gendarme.Rules.Correctness.TypesWithNativeFieldsShouldBeDisposableRule">
+            <summary>
+            This rule will fire if a type contains <c>IntPtr</c>, <c>UIntPtr</c>, or
+            <c>HandleRef</c> fields but does not implement <c>System.IDisposable</c>.
+            </summary>
+            <example>
+            Bad examples:
+            <code>
+            public class DoesNotImplementIDisposable {
+            	IntPtr field;
+            }
+            abstract public class AbstractDispose : IDisposable {
+            	IntPtr field;
+            	// the field should be disposed in the type that declares it
+            	public abstract void Dispose ();
+            }
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            public class Dispose : IDisposable {
+            	IDisposable field;
+            	public void Dispose ()
+            	{
+            		UnmanagedFree (field);
+            	}
+            }
+            </code></example>
+        </member>
+        <member name="T:Gendarme.Rules.Correctness.UseNoInliningWithGetCallingAssemblyRule">
+            <summary>
+            This rule warns when a method call <c>Assembly.GetCallingAssembly()</c> from a
+            method that is not decorated with <c>[MethodImpl(MethodImplOptions.NoInlining)]</c>.
+            Without this attribute the method could be inlined by the JIT. In this case the
+            calling assembly would be the assembly of the caller (of the inlined method),
+            which could be different than the assembly of the real, source-wise, caller to
+            <c>Assembly.GetCallingAssembly</c>.
+            </summary>
+            <example>
+            Bad example:
+            <code>
+            public void ShowInfo ()
+            {
+            	Console.WriteLine (Assembly.GetCallingAssembly ().Location);
+            }
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            [MethodImpl (MethodImplOptions.NoInlining)]
+            public void ShowInfo ()
+            {
+            	Console.WriteLine (Assembly.GetCallingAssembly ().Location);
+            }
+            </code></example>
+            <remarks>This rule is available since Gendarme 2.8</remarks>
+        </member>
+        <member name="T:Gendarme.Rules.Correctness.UseValueInPropertySetterRule">
+            <summary>
+            This rule ensures all setter properties uses the value argument passed to the property.
+            </summary>
+            <example>
+            Bad example:
+            <code>
+            public bool Active {
+            	get {
+            		return active;
+            	}
+            	// this can take a long time to figure out if the default value for active
+            	// is false (since most people will use the property to set it to true)
+            	set {
+            		active = true;
+            	}
+            }
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            public bool Active {
+            	get {
+            		return active;
+            	}
+            	set {
+            		active = value;
+            	}
+            }
+            </code></example>
+        </member>
+    </members>
+</doc>

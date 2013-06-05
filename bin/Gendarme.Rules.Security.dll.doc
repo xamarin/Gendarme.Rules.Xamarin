@@ -1,0 +1,128 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Gendarme.Rules.Security</name>
+    </assembly>
+    <members>
+        <member name="T:Gendarme.Rules.Security.ArrayFieldsShouldNotBeReadOnlyRule">
+            <summary>
+            This rule warns if a type declares a public <c>readonly</c> array field.
+            Marking a field <c>readonly</c> only prevents the field from being assigned
+            a different value, the object itself can still be changed. This means, that
+            the elements inside the array can still be changed.
+            </summary>
+            <example>
+            Bad example:
+            <code>
+            class Bad {
+            	public readonly string[] Array = new string[] { "A", "B" };
+            }
+            HasPublicReadonlyArray obj = HasPublicReadonlyArray ();
+            obj.Array[0] = "B"; // valid
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            class Good {
+            	private readonly string[] array = new string[] { "A", "B" };
+            	public string[] GetArray ()
+            	{
+            		return (string []) array.Clone();
+            	}
+            }
+            string[] obj = new HasPublicReadonlyArray ().GetArray ();
+            obj [0] = "B"; // valid, but has no effect on other users
+            </code></example>
+        </member>
+        <member name="T:Gendarme.Rules.Security.DoNotShortCircuitCertificateCheckRule">
+            <summary>
+            This rule checks for methods that implements pass-through certificate checks.
+            I.e. methods that override the framework decision about a certificate validity
+            without checking anything specific about the supplied certificate or error code.
+            Protocols like TLS/SSL are only secure if the certificates are used correctly.
+            </summary>
+            <example>
+            Bad example (ICertificatePolicy):
+            <code>
+            public class AcceptEverythingCertificatePolicy : ICertificatePolicy {
+            	public bool CheckValidationResult (ServicePoint srvPoint, X509Certificate certificate, WebRequest request, int certificateProblem)
+            	{
+            		// this accepts everything making it easy for MITM
+            		// (Man-in-the-middle) attacks
+            		return true;
+            	}
+            }
+            </code></example>
+            <example>
+            Good example (ICertificatePolicy):
+            <code>
+            public class AllowSpecificCertificatePolicy : ICertificatePolicy {
+            	public bool CheckValidationResult (ServicePoint srvPoint, X509Certificate certificate, WebRequest request, int certificateProblem)
+            	{
+            		// this accept only a specific certificate, even if others would be ok
+            		return (certificate.GetCertHashString () == "D62F48D013EE7FB58B79074512670D9C5B3A5DA9");
+            	}
+            }
+            </code></example>
+            <example>
+            Bad example (RemoteCertificateValidationCallback):
+            <code>
+            public bool CertificateValidationCallback (object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
+            {
+            	// this accepts everything making it easy for MITM
+            	// (Man-in-the-middle) attacks
+            	return true;
+            }
+            SslStream ssl = new SslStream (stream, false, new RemoteCertificateValidationCallback (CertificateValidationCallback), null);
+            </code></example>
+            <example>
+            Good example (RemoteCertificateValidationCallback):
+            <code>
+            public bool CertificateValidationCallback (object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
+            {
+            	// this accept only a specific certificate, even if others would be ok
+            	return (certificate.GetCertHashString () == "D62F48D013EE7FB58B79074512670D9C5B3A5DA9");
+            }
+            SslStream ssl = new SslStream (stream, false, new RemoteCertificateValidationCallback (CertificateValidationCallback), null);
+            </code></example>
+            <remarks>This rule is available since Gendarme 2.4</remarks>
+        </member>
+        <member name="T:Gendarme.Rules.Security.NativeFieldsShouldNotBeVisibleRule">
+            <summary>
+            This rule checks if a class exposes native fields. Native fields should not
+            be public because you lose control over their lifetime (other code could free
+            the memory or use it after it has been freed).
+            </summary>
+            <example>
+            Bad example:
+            <code>
+            public class HasPublicNativeField {
+            	public IntPtr NativeField;
+            }
+            </code></example>
+            <example>
+            Good example (hide):
+            <code>
+            class HasPrivateNativeField {
+            	private IntPtr NativeField;
+            	public void DoSomethingWithNativeField ();
+            }
+            </code></example>
+            <example>
+            Good example (read-only):
+            <code>
+            class HasReadOnlyNativeField {
+            	public readonly IntPtr NativeField;
+            }
+            </code></example>
+        </member>
+        <member name="T:Gendarme.Rules.Security.StaticConstructorsShouldBePrivateRule">
+            <summary>
+            This rule will fire if a type's static constructor is not private. This is a problem
+            because the static constructor is meant to be called by the runtime but if it is
+            not private then other code may call it as well which may lead to security
+            vulnerabilities. Note that C# and VB.NET enforce this rule.
+            </summary>
+        </member>
+    </members>
+</doc>

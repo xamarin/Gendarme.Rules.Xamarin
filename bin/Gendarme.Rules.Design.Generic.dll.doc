@@ -1,0 +1,243 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Gendarme.Rules.Design.Generic</name>
+    </assembly>
+    <members>
+        <member name="T:Gendarme.Rules.Design.Generic.AvoidDeclaringCustomDelegatesRule">
+            <summary>
+            This rule will fire if custom delegates are defined when either pre-defined <code>System.Action</code>,
+            <code>Action&lt;T[,...]&gt;</code> or <code>Func&lt;[Tx,...]TResult&gt;</code> could have been used.
+            </summary>
+            <example>
+            Bad example (without return value):
+            <code>
+            delegate void MyCustomDelegate (int a);
+            private MyCustomDelegate custom_delegate;
+            </code></example>
+            <example>
+            Good example (without return value):
+            <code>
+            private Action&lt;int&gt; action_delegate;
+            </code></example>
+            <example>
+            Bad example (with return value):
+            <code>
+            delegate int MyCustomDelegate (int a, string s);
+            private MyCustomDelegate custom_delegate;
+            </code></example>
+            <example>
+            Good example (with return value):
+            <code>
+            private Func&lt;int,string,int&gt; func_delegate;
+            </code></example>
+            <remarks>This rule applies only to assemblies targeting .NET 2.0 and later.</remarks>
+        </member>
+        <member name="T:Gendarme.Rules.Design.Generic.AvoidExcessiveParametersOnGenericTypesRule">
+            <summary>
+            A visible type should not have more than two generic parameters. This makes it
+            hard for consumers to remember what each parameter is required for.
+            </summary>
+            <example>
+            Bad example:
+            <code>
+            public class BadClass&lt;A, B, C&gt; {
+            }
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            public class GoodClass&lt;A, B&gt; {
+            }
+            </code></example>
+            <remarks>This rule applies only to assemblies targeting .NET 2.0 and later.</remarks>
+        </member>
+        <member name="T:Gendarme.Rules.Design.Generic.AvoidMethodWithUnusedGenericTypeRule">
+            <summary>
+            This method will fire if a generic method does not use all of its generic type parameters
+            in the formal parameter list. This usually means that either the type parameter is not used at
+            all in which case it should be removed or that it's used only for the return type which
+            is problematic because that prevents the compiler from inferring the generic type
+            when the method is called which is confusing to many developers.
+            </summary>
+            <example>
+            Bad example:
+            <code>
+            public class Bad {
+            	public string ToString&lt;T&gt; ()
+            	{
+            		return typeof (T).ToString ();
+            	}
+            	static void Main ()
+            	{
+            		// the compiler can't infer int so we need to supply it ourselves
+            		Console.WriteLine (ToString&lt;int&gt; ());
+            	}
+            }
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            public class Good {
+            	public string ToString&lt;T&gt; (T obj)
+            	{
+            		return obj.GetType ().ToString ();
+            	}
+            	static void Main ()
+            	{
+            		Console.WriteLine (ToString (2));
+            	}
+            }
+            </code></example>
+            <remarks>This rule applies only to assemblies targeting .NET 2.0 and later.</remarks>
+        </member>
+        <member name="T:Gendarme.Rules.Design.Generic.DoNotDeclareStaticMembersOnGenericTypesRule">
+            <summary>
+            This rule checks for generic types that contain static members. Such members requires the type argument
+            to be specified when consumed, leading to harder to use or confusing API.
+            </summary>
+            <example>
+            Bad example:
+            <code>
+            public class BadClass&lt;T&gt; {
+            	public static string Member () {
+            	}
+            }
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            public class GoodClass&lt;T&gt; {
+            	public string Member () {
+            	}
+            }
+            </code></example>
+            <remarks>This rule applies only to assemblies targeting .NET 2.0 and later.</remarks>
+        </member>
+        <member name="T:Gendarme.Rules.Design.Generic.DoNotExposeGenericListsRule">
+            <summary>
+            A type has an externally visible member that is, returns or has a signature containing a
+            <c>System.Collections.Generic.List&lt;T&gt;</c>.
+            </summary>
+            <example>
+            Bad example:
+            <code>
+            public class BadClass {
+            	public List&lt;string&gt; member { get; set; };
+            }
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            public class GoodClass {
+            	public Collection&lt;string&gt; member { get; set; };
+            }
+            </code></example>
+            <remarks>This rule applies only to assemblies targeting .NET 2.0 and later.</remarks>
+        </member>
+        <member name="T:Gendarme.Rules.Design.Generic.DoNotExposeNestedGenericSignaturesRule">
+            <summary>
+            This rule will fire if an externally visible method has a parameter or return type
+            whose type is a generic type which contains a generic type. For example,
+            <c>List&lt;List&lt;int&gt;&gt;</c>. Such types are hard to construct and should
+            be avoided because simpler alternatives generally exist.
+            Since some language, like C#, have direct support for nullable types, i.e.
+            <c>System.Nullable&lt;T&gt;</c> this specific case is ignored by the rule.
+            </summary>
+            <example>
+            Bad example:
+            <code>
+            public class Generic&lt;T&gt; {
+            	public void Process (KeyValuePair&lt;T, ICollection&lt;int&gt;&gt; value)
+            	{
+            	}
+            }
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            public class Generic&lt;T&gt; {
+            	public void Process (KeyValuePair&lt;T, int[]&gt; value)
+            	{
+            	}
+            }
+            </code></example>
+            <remarks>This rule applies only to assemblies targeting .NET 2.0 and later.</remarks>
+        </member>
+        <member name="T:Gendarme.Rules.Design.Generic.ImplementGenericCollectionInterfacesRule">
+            <summary>
+            This rule checks for types which implement the non-generic <code>System.IEnumerable</code> interface but
+            not the <code>System.IEnumerable&lt;T&gt;</code> interface. Implementing the generic version
+            of <code>System.IEnumerable</code> avoids casts, and possibly boxing, when iterating the collection.
+            </summary>
+            <example>
+            Bad example:
+            <code>
+            public class IntEnumerable : IEnumerable {
+            	public IEnumerator GetEnumerator ()
+            	{
+            	}
+            }
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            public class IntEnumerable : IEnumerable&lt;int&gt; {
+            	public IEnumerator&lt;int&gt; GetEnumerator ()
+            	{
+            	}
+            	IEnumerator IEnumerable.GetEnumerator ()
+            	{
+            	}
+            }
+            </code></example>
+            <remarks>This rule applies only to assemblies targeting .NET 2.0 and later.</remarks>
+        </member>
+        <member name="T:Gendarme.Rules.Design.Generic.PreferGenericsOverRefObjectRule">
+            <summary>
+            This rule fires if a method has a reference argument (<c>ref</c> or
+            <c>out</c> in C#) to <c>System.Object</c>. These methods can generally be
+            rewritten in .NET 2.0 using generics which provides type safety, eliminates
+            casts, and makes the API easier to consume.
+            </summary>
+            <example>
+            Bad example:
+            <code>
+            // common before 2.0 but we can do better now
+            public bool TryGetValue (string key, ref object value)
+            {
+            	// ...
+            }
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            public bool TryGetValue&lt;T&gt; (string key, ref T value)
+            {
+            	// ...
+            }
+            </code></example>
+            <remarks>This rule applies only to assemblies targeting .NET 2.0 and later.</remarks>
+        </member>
+        <member name="T:Gendarme.Rules.Design.Generic.UseGenericEventHandlerRule">
+            <summary>
+            This rule fires if an assembly defines a delegate which can be
+            replaced by <c>System.EventHandler&lt;TEventArgs&gt;</c>.
+            </summary>
+            <example>
+            Bad example:
+            <code>
+            public delegate void AuthenticityHandler (object sender, AuthenticityEventArgs e);
+            public event AuthenticityHandler CheckingAuthenticity;
+            public event AuthenticityHandler CheckedAuthenticity;
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            public event EventHandler&lt;AuthenticityEventArgs&gt; CheckingAuthenticity;
+            public event EventHandler&lt;AuthenticityEventArgs&gt; CheckedAuthenticity;
+            </code></example>
+            <remarks>This rule applies only to assemblies targeting .NET 2.0 and later.</remarks>
+        </member>
+    </members>
+</doc>

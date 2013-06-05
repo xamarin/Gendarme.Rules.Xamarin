@@ -1,0 +1,245 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Gendarme.Rules.Interoperability</name>
+    </assembly>
+    <members>
+        <member name="T:Gendarme.Rules.Interoperability.CentralizePInvokesIntoNativeMethodsTypeRule">
+            <summary>
+            This rule will warn you if p/invoke declarations are found outside some
+            specially named types. The convention makes it easier to know which type
+            of security checks are done (at runtime) and how critical is a security
+            audit for them. In all cases the type should not be visible (i.e. <c>internal</c>
+            in C#) outside the assembly.
+            Note that the type naming itself has no influence on security (either with
+            Code Access Security or with CoreCLR for Silverlight). The naming convention
+            includes the presence or absence of the <c>[SuppressUnmanagedCodeSecurity]</c>
+            security attribute based on the type name.
+            <list><item><description><c>NativeMethods</c> should not be decorated with a
+            <c>[SuppressUnmanagedCodeSecurity]</c>. This will let CAS do a stackwalk to
+            ensure the code can be...</description></item><item><description><c>SafeNativeMethods</c> should be decorated with a
+            <c>[SuppressUnmanagedCodeSecurity] attribute</c>. The attribute means that no
+            stackwalk will occurs.</description></item><item><description><c>UnsafeNativeMethods</c> should be decorated with a
+            <c>[SuppressUnmanagedCodeSecurity] attribute</c>. The attribute means that no
+            stackwalk will occurs. However since the p/invoke methods are named unsafe then
+            the rule will warn an audit-level defect to review the code.</description></item></list></summary>
+            <remarks>This rule is available since Gendarme 2.8</remarks>
+        </member>
+        <member name="T:Gendarme.Rules.Interoperability.DelegatesPassedToNativeCodeMustIncludeExceptionHandlingRule">
+            <summary>
+            This rule checks for delegates which are created for methods which don't
+            have exception handling and then passed to native code.
+            Every delegate which is passed to native code must include an exception
+            block which spans the entire method and has a catch all block.
+            </summary>
+            <example>
+            Bad example:
+            <code>
+            delegate void Callback ();
+            [DllImport ("mylibrary.dll")]
+            static extern void RegisterCallback (Callback callback);
+            public void RegisterManagedCallback ()
+            {
+            	RegisterCallback (ManagedCallback);
+            }
+            public void ManagedCallback ()
+            {
+            	// This will cause the process to crash if native code calls this method.
+            	throw new NotImplementedException ();
+            }
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            delegate void Callback ();
+            [DllImport ("mylibrary.dll")]
+            static extern void RegisterCallback (Callback callback);
+            public void RegisterManagedCallback ()
+            {
+            	RegisterCallback (ManagedCallback);
+            }
+            public void ManagedCallback ()
+            {
+            	try {
+            		throw new NotImplementedException ();
+            	}
+            	catch {
+            		// This way the exception won't "leak" to native code
+            	}
+            	try {
+            		throw new NotImplementedException ();
+            	}
+            	catch (System.Exception ex) {
+            		// This is also safe - the runtime will process this catch clause,
+            		// even if it is technically possible (by writing assemblies in managed
+            		// C++ or IL) to throw an exception that doesn't inherit from
+            		// System.Exception.
+            	}
+            }
+            </code></example>
+            <remarks>This rule is available since Gendarme 2.6</remarks>
+        </member>
+        <member name="T:Gendarme.Rules.Interoperability.DoNotAssumeIntPtrSizeRule">
+            <summary>
+            This rule checks for code which casts an <code>IntPtr</code> or <code>UIntPtr</code> into a
+            32-bit (or smaller) value. It will also check if memory read with the <c>Marshal.ReadInt32</c>
+            and <c>Marshal.ReadInt64</c> methods is being cast into an <code>IntPtr</code> or
+            <code>UIntPtr</code>. <code>IntPtr</code> is generally used to reference a memory
+            location and downcasting them to 32-bits will make the code fail on 64-bit CPUs.
+            </summary>
+            <example>
+            Bad example (cast):
+            <code>
+            int ptr = dest.ToInt32 ();
+            for (int i = 0; i &lt; 16; i++) {
+            	Marshal.StructureToPtr (this, (IntPtr)ptr, false);
+            	ptr += 4;
+            }
+            </code></example>
+            <example>
+            Bad example (Marshal.Read*):
+            <code>
+            // that won't work on 64 bits platforms
+            IntPtr p = (IntPtr) Marshal.ReadInt32 (p);
+            </code></example>
+            <example>
+            Good example (cast):
+            <code>
+            long ptr = dest.ToInt64 ();
+            for (int i = 0; i &lt; 16; i++) {
+            	Marshal.StructureToPtr (this, (IntPtr) ptr, false);
+            	ptr += IntPtr.Size;
+            }
+            </code></example>
+            <example>
+            Good example (Marshal.Read*):
+            <code>
+            IntPtr p = (IntPtr) Marshal.ReadIntPtr (p);
+            </code></example>
+            <remarks>This rule is available since Gendarme 2.0 but was named DoNotCastIntPtrToInt32Rule before 2.2</remarks>
+        </member>
+        <member name="T:Gendarme.Rules.Interoperability.GetLastErrorMustBeCalledRightAfterPInvokeRule">
+            <summary>
+            This rule will fire if <code>Marshal.GetLastWin32Error()</code> is called, but is
+            not called immediately after a P/Invoke. This is a problem because other methods,
+            even managed methods, may overwrite the error code.
+            </summary>
+            <example>
+            Bad example:
+            <code>
+            public void DestroyError ()
+            {
+            	MessageBeep (2);
+            	Console.WriteLine ("Beep");
+            	int error = Marshal.GetLastWin32Error ();
+            }
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            public void GetError ()
+            {
+            	MessageBeep (2);
+            	int error = Marshal.GetLastWin32Error ();
+            	Console.WriteLine ("Beep");
+            }
+            public void DontUseGetLastError ()
+            {
+            	MessageBeep (2);
+            	Console.WriteLine ("Beep");
+            }
+            </code></example>
+        </member>
+        <member name="T:Gendarme.Rules.Interoperability.MarshalBooleansInPInvokeDeclarationsRule">
+            <summary>
+            This rule warns the developer if a <code>[MarshalAs]</code> attribute has not been
+            specified for boolean parameters of a P/Invoke method. The size of boolean types varies
+            across language (e.g. the C++ <c>bool</c> type is four bytes on some platforms and
+            one byte on others). By default the CLR will marshal <b>System.Boolean</b> as a 32 bit value
+            (<c>UnmanagedType.Bool</c>) like the Win32 API <b>BOOL</b> uses. But, for clarity,
+            you should always specify the correct value.
+            </summary>
+            <example>
+            Bad example:
+            <code>
+            // bad assuming the last parameter is a single byte being mapped to a bool
+            [DllImport ("liberty")]
+            private static extern bool Bad (bool b1, ref bool b2);
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            [DllImport ("liberty")]
+            [return: MarshalAs (UnmanagedType.Bool)]
+            private static extern bool Good ([MarshalAs (UnmanagedType.Bool)] bool b1, [MarshalAs (UnmanagedType.U1)] ref bool b2);
+            </code></example>
+        </member>
+        <member name="T:Gendarme.Rules.Interoperability.MarshalStringsInPInvokeDeclarationsRule">
+            <summary>
+            This rule will fire if a P/Invoke method has System.String or System.Text.StringBuilder
+            arguments, and the DllImportAttribute does not specify the <code>CharSet</code>,
+            and the string arguments are not decorated with <code>[MarshalAs]</code>.
+            This is important because the defaults are different on the various platforms.
+            On Mono the default is to always use utf-8. On .NET the default is to use the ANSI
+            CharSet which is the native encoding and will typically be some variant of ASCII or
+            something like Shift-JIS. On Compact .NET the default is utf-16.
+            </summary>
+            <example>
+            Bad example:
+            <code>
+            [DllImport ("coredll")]
+            static extern int SHCreateShortcut (StringBuilder szShortcut, StringBuilder szTarget);
+            </code></example>
+            <example>
+            Good examples:
+            <code>
+            [DllImport ("coredll", CharSet = CharSet.Auto)]
+            static extern int SHCreateShortcut (StringBuilder szShortcut, StringBuilder szTarget);
+            [DllImport ("coredll")]
+            static extern int SHCreateShortcut ([MarshalAs (UnmanagedType.LPTStr)] StringBuilder szShortcut,
+            	[MarshalAs (UnmanagedType.LPTStr)] StringBuilder szTarget);
+            </code></example>
+        </member>
+        <member name="T:Gendarme.Rules.Interoperability.PInvokeShouldNotBeVisibleRule">
+            <summary>
+            This rule checks for PInvoke declaration methods that are visible outside their assembly.
+            </summary>
+            <example>
+            Bad example:
+            <code>
+            [DllImport ("user32.dll")]
+            public static extern bool MessageBeep (UInt32 beepType);
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            [DllImport ("user32.dll")]
+            internal static extern bool MessageBeep (UInt32 beepType);
+            </code></example>
+        </member>
+        <member name="T:Gendarme.Rules.Interoperability.UseManagedAlternativesToPInvokeRule">
+            <summary>
+            This rule will fire if an external (P/Invoke) method is called but a managed
+            alternative is provided by the .NET framework.
+            </summary>
+            <example>
+            Bad example:
+            <code>
+            [DllImport ("kernel32.dll")]
+            static extern void Sleep (uint dwMilliseconds);
+            public void WaitTwoSeconds ()
+            {
+            	Sleep (2000);
+            }
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            public void WaitTwoSeconds ()
+            {
+            	System.Threading.Thread.Sleep (2000);
+            }
+            </code></example>
+        </member>
+    </members>
+</doc>

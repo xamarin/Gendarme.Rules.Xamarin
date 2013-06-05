@@ -1,5 +1,5 @@
 # Build Folders (you can keep bin if you'd like, to store dlls and pdbs)
-[Bb]in/
+[Bb]in/*Xamarin*
 [Oo]bj/
 
 # mstest test results
@@ -88,8 +88,10 @@ csx
 # Windows Store app package directory
 AppPackages/
 
+# OS X
+*.DS_Store
+
 # Others
-[Bb]in
 [Oo]bj
 sql
 TestResults

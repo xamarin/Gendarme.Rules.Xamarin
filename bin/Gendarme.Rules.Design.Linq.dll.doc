@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Gendarme.Rules.Design.Linq</name>
+    </assembly>
+    <members>
+        <member name="T:Gendarme.Rules.Design.Linq.AvoidExtensionMethodOnSystemObjectRule">
+            <summary>
+            Extension methods should not be used to extend <c>System.Object</c>.
+            Such extension methods cannot be consumed by some languages, like VB.NET,
+            which use late-binding on <c>System.Object</c> instances.
+            </summary>
+            <example>
+            Bad example:
+            <code>
+            public static class Extensions {
+            	public static string ToDebugString (this object self)
+            	{
+            		return String.Format ("'{0}', type '{1}', hashcode: {2}",
+            			self.ToString (), self.GetType (), self.GetHashCode ());
+            	}
+            }
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            public static class Extensions {
+            	public static string ToDebugString (this DateTime self)
+            	{
+            		return String.Format ("'{0}', type '{1}', hashcode: {2}",
+            			self.ToString (), self.GetType (), self.GetHashCode ());
+            	}
+            }
+            </code></example>
+            <remarks>This rule is available since Gendarme 2.2</remarks>
+        </member>
+    </members>
+</doc>

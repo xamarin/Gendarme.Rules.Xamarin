@@ -1,0 +1,378 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Gendarme.Rules.Interoperability.Com</name>
+    </assembly>
+    <members>
+        <member name="T:Gendarme.Rules.Interoperability.Com.AutoLayoutTypesShouldNotBeComVisibleRule">
+            <summary>
+            This rule checks for <c>[System.Runtime.InteropServices.ComVisible]</c> decorated value
+            types which have <c>[System.Runtime.InteropServices.StructLayout]</c> attribute set to
+            <c>System.Runtime.InteropServices.LayoutKind</c>.<c>Auto</c> because auto layout can
+            change between Mono and .NET or even between releases of the .NET/Mono frameworks.
+            Note that this does not affect <c>System.Enum</c>-based types.
+            </summary>
+            <example>
+            Bad example:
+            <code>
+            [assembly: ComVisible (false)]
+            namespace InteropLibrary {
+            	[ComVisible (true)]
+            	[StructLayout (LayoutKind.Auto)]
+            	public struct Good {
+            		ushort a;
+            		ushort b;
+            	}
+            }
+            </code></example>
+            <example>
+            Good example
+            <code>
+            [assembly: ComVisible (false)]
+            namespace InteropLibrary {
+            	[ComVisible (true)]
+            	[StructLayout (LayoutKind.Sequential)]
+            	public struct Good {
+            		ushort a;
+            		ushort b;
+            	}
+            }
+            </code></example>
+            <remarks>
+            Rule applies only when the containing assembly has ComVisible attribute explicitly set to false
+            and the type has ComVisible attribute explicitly set to true.
+            </remarks>
+        </member>
+        <member name="T:Gendarme.Rules.Interoperability.Com.AvoidInt64ArgumentsInComVisibleMethodsRule">
+            <summary>
+            This rule checks that ComVisible methods do not take System.Int64 arguments
+            because Visual Basic 6 clients do not support it.
+            </summary>
+            <example>
+            Bad example:
+            <code>
+            [assembly: ComVisible (false)]
+            namespace InteropLibrary {
+            	[ComVisible (true)]
+            	public class Bad {
+            		public void DoBadThings (long a)
+            		{
+            			// doing bad things
+            		}
+            	}
+            }
+            </code></example>
+            <example>
+            Good example (type changed):
+            <code>
+            [assembly: ComVisible (false)]
+            namespace InteropLibrary {
+            	[ComVisible (true)]
+            	public class Good {
+            		public void DoGoodThings (int a)
+            		{
+            			// doing good things
+            		}
+            	}
+            }
+            </code></example>
+            <example>
+            Good example (method is not visible from COM):
+            <code>
+            [assembly: ComVisible (false)]
+            namespace InteropLibrary {
+            	[ComVisible (true)]
+            	public class Good {
+            		[ComVisible (false)]
+            		public void DoGoodThings (long a)
+            		{
+            			// doing good things
+            		}
+            	}
+            }
+            </code></example>
+            <remarks>
+            Rule applies only when the containing assembly has ComVisible attribute explicitly set to false
+            and the type has ComVisible attribute explicitly set to true.
+            </remarks>
+        </member>
+        <member name="T:Gendarme.Rules.Interoperability.Com.AvoidNonPublicFieldsInComVisibleValueTypesRule">
+            <summary>
+            This rule checks for ComVisible value types which contain fields that are non-public.
+            </summary>
+            <example>
+            Bad example:
+            <code>
+            [assembly: ComVisible (false)]
+            namespace InteropLibrary {
+            	[ComVisible (true)]
+            	public struct BadStruct {
+            		internal int SomeValue;
+            	}
+            }
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            [assembly: ComVisible (false)]
+            namespace InteropLibrary {
+            	[ComVisible (true)]
+            	public struct BadStruct {
+            		public int SomeValue;
+            	}
+            }
+            </code></example>
+        </member>
+        <member name="T:Gendarme.Rules.Interoperability.Com.AvoidOverloadsInComVisibleInterfacesRule">
+            <summary>
+            This rule checks for ComVisible interface which contains overloaded methods.
+            </summary>
+            <example>
+            Bad example:
+            <code>
+            	[ComVisible(true)]
+            	public interface Bad {
+            		void SomeMethod();
+            		void SomeMethod(int SomeValue);
+            	}
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            [ComVisible(true)]
+            	public interface Good {
+            		void SomeMethod();
+            		void SomeMethodWithValue(int SomeValue);
+            	}
+            </code></example>
+        </member>
+        <member name="T:Gendarme.Rules.Interoperability.Com.AvoidStaticMembersInComVisibleTypesRule">
+            <summary>
+            COM visible types should not contain static methods because they are
+            not supported by COM
+            </summary>
+            <example>
+            Bad example:
+            <code>
+            [assembly: ComVisible (false)]
+            namespace InteropLibrary {
+            	[ComVisible (true)]
+            	public class Bad {
+            		public static void BadMethod ()
+            		{
+            			// do something
+            		}
+            	}
+            }
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            [assembly: ComVisible (false)]
+            namespace InteropLibrary {
+            	[ComVisible (true)]
+            	public class Good {
+            		[ComVisiblte (false)]
+            		public static void GoodMethod ()
+            		{
+            			// do something
+            		}
+            	}
+            }
+            </code></example>
+            <remarks>
+            This rule ignores methods marked with ComRegisterFunctionAttribute or ComUnregisterFunctionAttribute attributes.
+            Rule applies only when the containing assembly has ComVisible attribute explicitly set to false
+            and the type has ComVisible attribute explicitly set to true.</remarks>
+        </member>
+        <member name="T:Gendarme.Rules.Interoperability.Com.ComVisibleShouldInheritFromComVisibleRule">
+            <summary>
+            This rule checks that the base type of COM visible types is also
+            visible from COM. This is needed reduce the chance of breaking
+            COM clients as COM invisible types do not have to follow COM versioning rules.
+            </summary>
+            <example>
+            Bad example:
+            <code>
+            [assemply: ComVisible(false)]
+            namespace InteropLibrary {
+            	[ComVisible (false)]
+            	public class Base {
+            	}
+            	[ComVisible (true)]
+            	public class Derived : Base {
+            	}
+            }
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            [assemply: ComVisible(false)]
+            namespace InteropLibrary {
+            	[ComVisible (true)]
+            	public class Base {
+            	}
+            	[ComVisible (true)]
+            	public class Derived : Base {
+            	}
+            }
+            </code></example>
+            <example>
+            Good example (both types are invisible because of the assembly attribute):
+            <code>
+            [assemply: ComVisible(false)]
+            namespace InteropLibrary {
+            	public class Base {
+            	}
+            	public class Derived : Base {
+            	}
+            }
+            </code></example>
+        </member>
+        <member name="T:Gendarme.Rules.Interoperability.Com.ComVisibleTypesShouldBeCreatableRule">
+            <summary>
+            This rule checks for ComVisible reference types which have a public parameterized constructor,
+            but lack a default public constructor.
+            </summary>
+            <example>
+            Bad example:
+            <code>
+            	[ComVisible (true)]
+            	public class BadClass {
+            		public BadClass (int param) {
+            		}
+            	}
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            	[ComVisible (true)]
+            	public class GoodClass {
+            		public GoodClass () {
+            		}
+            		public GoodClass (int param) {
+            		}
+            	}
+            </code></example>
+        </member>
+        <member name="T:Gendarme.Rules.Interoperability.Com.DoNotUseAutoDualClassInterfaceTypeRule">
+            <summary>
+            Classes should not use ClassInterfaceAttribute with the value of
+            ClassInterfaceType.AutoDual because this may break COM clients
+            if the class layout changes.
+            </summary>
+            <example>
+            Bad example:
+            <code>
+            [ComVisible (true)]
+            [ClassInterface (ClassInterfaceType.AutoDual)]
+            class Bad {
+            	// do something
+            }
+            </code></example>
+            <example>
+            Good example (ClassInterfaceType.None):
+            <code>
+            [ComVisible (true)]
+            [ClassInterface (ClassInterfaceType.None)]
+            class Good : ICloneable {
+            	public object Clone ()
+            	{
+            		return new object ();
+            	}
+            }
+            </code></example>
+            <example>
+            Good example (no ClassInterface attribute, equal to ClassInterfaceType.AutoDispatch):
+            <code>
+            [ComVisible (true)]
+            class Good {
+            	// do something
+            }
+            </code></example>
+        </member>
+        <member name="T:Gendarme.Rules.Interoperability.Com.MarkComSourceInterfacesAsIDispatchRule">
+            <summary>
+            When a type is marked with the ComSourceInterfacesAttribute, every specified interface must
+            be marked with a InterfaceTypeAttribute set to ComInterfaceType.InterfaceIsIDispatch.
+            </summary>
+            <example>
+            Bad example:
+            <code>
+            interface IBadInterface { }
+            [ComSourceInterfaces("Project.IBadInterface")]
+            class TestClass { }
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            [InterfaceType(ComInterfaceType.InterfaceIsIDispatch)]
+            interface IGoodInterface { }
+            [ComSourceInterfaces("Project.IGoodInterface")]
+            class TestClass { }
+            </code></example>
+        </member>
+        <member name="T:Gendarme.Rules.Interoperability.Com.ReviewComRegistrationMethodsRule">
+            <summary>
+            This rule checks the correctness of COM register and unregister methods,
+            i.e. they should not be externally visible and they should be matched
+            (both or none of them should exist ).
+            </summary>
+            <example>
+            Bad example (public methods):
+            <code>
+            [ComVisible (true)
+            class Bad {
+            	[ComRegisterFunction]
+            	public void Register ()
+            	{
+            	}
+            	[ComUnregisterFunction]
+            	public void Unregister ()
+            	{
+            	}
+            }
+            </code></example>
+            <example>
+            Bad example (only one of the methods exist)
+            <code>
+            [ComVisible (true)]
+            class Bad {
+            	[ComRegisterFunction]
+            	public void Register ()
+            	{
+            	}
+            }
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            [ComVisible (true)]
+            class Good {
+            	[ComRegisterFunction]
+            	private void Register ()
+            	{
+            	}
+            	[ComUnregisterFunction]
+            	private void Unregister ()
+            	{
+            	}
+            }
+            </code></example>
+        </member>
+        <member name="T:Gendarme.Rules.Interoperability.Com.ComRocks">
+            <summary>
+            ComRocks contains extensions methods for COM-related methods.
+            </summary>
+        </member>
+        <member name="M:Gendarme.Rules.Interoperability.Com.ComRocks.IsComVisible(Mono.Cecil.ICustomAttributeProvider)">
+            <summary>
+            Check if the type is explicitly declared to be ComVisible.
+            </summary>
+            <param name="self">The ICustomAttributeProvider (e.g. AssemblyDefinition, TypeReference, MethodReference,
+            FieldReference...) on which the extension method can be called.</param>
+            <returns>
+                <code>null</code> no ComVisible attribute is present, <code>true</code> if ComVisible is set to true, <code>false</code> otherwise.</returns>
+        </member>
+    </members>
+</doc>

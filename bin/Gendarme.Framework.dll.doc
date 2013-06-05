@@ -1,0 +1,1275 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Gendarme.Framework</name>
+    </assembly>
+    <members>
+        <member name="M:Gendarme.Framework.Engines.NamespaceEngine.AllNamespaces">
+            <summary>
+            Return all namespaces from all assemblies being analyzed.
+            </summary>
+            <returns>All namespaces defined in the assembly set</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Engines.NamespaceEngine.Exists(System.String)">
+            <summary>
+            Return if a namespace exist inside the assembly set
+            </summary>
+            <param name="nameSpace">Namespace to confirm existance</param>
+            <returns>True if the namespace exists, False otherwise</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Engines.NamespaceEngine.NamespacesInside(Mono.Cecil.AssemblyDefinition)">
+            <summary>
+            Return all namespaces defined inside the specified assembly.
+            </summary>
+            <param name="assembly">Assembly to search into</param>
+            <returns>All namespaces defined in the specified assembly</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Engines.NamespaceEngine.TypesInside(System.String)">
+            <summary>
+            Return all types defined inside a namespace across all assemblies.
+            </summary>
+            <param name="nameSpace">Namespace to search into</param>
+            <returns>All TypeDefinition defined the the specified namespace</returns>
+        </member>
+        <member name="T:Gendarme.Framework.Engines.OpCodeEngine">
+            <summary>
+            Build an OpCodeBitmask for each MethodBody. By using the extra data gathered
+            by this engine it is possible to short-circuit rule logic early by ensuring
+            it does what the rule expects (e.g. check for [call|callvirt] instructions).
+            </summary>
+        </member>
+        <member name="T:Gendarme.Framework.Helpers.Log">
+            <summary>
+            Wrapper around System.Diagnostics.Debug.
+            </summary>
+            <remarks>
+            Instead of adding temporary Console.WriteLines to your rules use this
+            class instead. This way we can leave the debugging code in the rule
+            and enable it on a rule by rule basis (using the bin/gendarme.exe.config
+            file). Usage is like this:
+            <code>
+            Log.WriteLine (this, "value: {0}", value);	// this will normally be a rule instance
+            Log.WriteLine ("DefineAZeroValueRule", "hey");	// should rarely be used
+            Log.WriteLine ("DefineAZeroValueRule.Details", "hey");	// convention for additional output
+            </code></remarks>
+        </member>
+        <member name="T:Gendarme.Framework.Helpers.MethodSignature">
+            <summary>
+            Used to match methods. Properties that are set to null are ignored
+            </summary>
+            <example>
+                <code>
+            MethodDefinition method = ...
+            MethodSignature sig = new MethodSignature ("Dispose");
+            if (sig.Match (method)) {
+            //matches any method named "Dispose" with any (or no) return value and any number of parameters
+            }
+            </code>
+            </example>
+            <seealso cref="T:Gendarme.Framework.Helpers.MethodSignatures" />
+        </member>
+        <member name="P:Gendarme.Framework.Helpers.MethodSignature.Name">
+            <summary>
+            The name of the method to match. Ignored if null.
+            </summary>
+        </member>
+        <member name="P:Gendarme.Framework.Helpers.MethodSignature.ReturnType">
+            <summary>
+            The FullName (Namespace.Type) of the return type. Ignored if null.
+            </summary>
+        </member>
+        <member name="P:Gendarme.Framework.Helpers.MethodSignature.Parameters">
+            <summary>
+            An array of FullNames (Namespace.Type) of parameter types. Ignored if null. Null entries act as wildcards.
+            </summary>
+        </member>
+        <member name="M:Gendarme.Framework.Helpers.MethodSignature.Matches(Mono.Cecil.MethodReference)">
+            <summary>
+            Checks if a MethodReference match the signature.
+            </summary>
+            <param name="method">The method to check.</param>
+            <returns>True if the MethodReference matches all aspects of the MethodSignature.</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Helpers.MethodSignature.ToString">
+            <summary>
+            </summary>
+            <returns>
+            </returns>
+        </member>
+        <member name="T:Gendarme.Framework.Helpers.MethodSignatures">
+            <summary>
+            Defines commonly used MethodSignatures
+            </summary>
+        </member>
+        <member name="T:Gendarme.Framework.Helpers.NamespaceDefinition">
+            <summary>
+            Namespaces do not really exists in the CLR, at least not like other first level citizens.
+            Since we want to report defects against them we need something to fill this void.
+            </summary>
+        </member>
+        <member name="P:Gendarme.Framework.Helpers.NamespaceDefinition.MetadataToken">
+            <summary>
+            This is not a true, CLR-wise, metadata object but it
+            returns a fake token so other API, like rocks, can use it
+            like any real <c>IMetadataTokenProvider</c></summary>
+        </member>
+        <member name="M:Gendarme.Framework.Helpers.NamespaceDefinition.IsSpecialized(System.String)">
+            <summary>
+            Check if the specified namespace is a 'specialized' namespace, i.e. a
+            namespace that the framework suggest you to use.
+            </summary>
+            <param name="name">Namespace to be verified.</param>
+            <returns>True if the namespace is a specialized namespace.</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Helpers.NamespaceDefinition.GetDefinition(System.String)">
+            <summary>
+            Get the NamespaceDefinition that correspond to the specified namespace.
+            </summary>
+            <param name="name">Name of the namespace</param>
+            <returns>A global NamespaceDefinition corresponding to the specified namespace</returns>
+        </member>
+        <member name="T:Gendarme.Framework.Helpers.OpCodeBitmask">
+            <summary>
+            This is a specialized Bitmask class for the Code enumeration.
+            Bitmask`1 can't be used since there are more than 64 opcodes defined.
+            </summary>
+        </member>
+        <member name="M:Gendarme.Framework.Helpers.OpCodeBitmask.#ctor">
+            <summary>
+            Create a new, empty, OpCode bitmask
+            </summary>
+        </member>
+        <member name="M:Gendarme.Framework.Helpers.OpCodeBitmask.Intersect(Gendarme.Framework.Helpers.OpCodeBitmask)">
+            <summary>
+            Compute if an intersection exists between the bitmasks
+            </summary>
+            <param name="bitmask">Note: a null value is interpreted as a full (set) mask.</param>
+            <returns>True if there is an intersection (for any opcode) between the masks, False otherwise</returns>
+        </member>
+        <member name="P:Gendarme.Framework.Helpers.OpCodeBitmask.All">
+            <summary>
+            Mask with all bits sets so it includes all opcodes (and more)
+            </summary>
+        </member>
+        <member name="P:Gendarme.Framework.Helpers.OpCodeBitmask.Calls">
+            <summary>
+            Mask that includes Call and Callvirt.
+            Does not include Calli since it's operand is an InlineSig (not InlineMethod)
+            </summary>
+        </member>
+        <member name="P:Gendarme.Framework.Helpers.OpCodeBitmask.Conversion">
+            <summary>
+            Mask that includes Conv_* instructions
+            </summary>
+        </member>
+        <member name="T:Gendarme.Framework.Helpers.PrimitiveReferences">
+            <summary>
+            Provide an easy way to get TypeReference to primitive types without having
+            direct access to the mscorlib.dll assembly (any ModuleDefinition will do).
+            </summary>
+        </member>
+        <member name="T:Gendarme.Framework.Helpers.StackEntryAnalysis">
+            <summary>
+            This class can be used to find all usages of a reference on the stack.
+            Currently used for:
+            Gendarme.Rules.BadPractice.CheckNewExceptionWithoutThrowRule
+            Gendarme.Rules.BadPractice.CheckNewThreadWithoutStartRule
+            Gendarme.Rules.Interoperability.GetLastErrorMustBeCalledRightAfterPInvokeRule
+            </summary>
+        </member>
+        <member name="T:Gendarme.Framework.Helpers.StackEntryAnalysis.StoreSlot">
+            <summary>
+            Saves information about a local variable slot (argument or local variable).
+            Used to keep track of assignments.
+            </summary>
+        </member>
+        <member name="P:Gendarme.Framework.Helpers.StackEntryAnalysis.StoreSlot.IsNone">
+            <summary>
+            Use this to check if an instruction accesses a StoreSlot. True if this is not a StoreSlot.
+            </summary>
+        </member>
+        <member name="T:Gendarme.Framework.Helpers.StackEntryAnalysis.InstructionWithLeave">
+            <summary>
+            Wraps an instruction and a stack of leave statements used to get to this instruction.
+            Needed to do correct analysis in finally blocks.
+            </summary>
+        </member>
+        <member name="M:Gendarme.Framework.Helpers.StackEntryAnalysis.InstructionWithLeave.Push(Mono.Cecil.Cil.Instruction,Mono.Cecil.Cil.Instruction)">
+            <summary>
+            Returns a new InstructionWithLeave with leave pushed onto the stack.
+            </summary>
+            <param name="instruction">The new instruction.</param>
+            <param name="leave">The leave instruction to push onto the stack.</param>
+            <returns>A new InstructionWithLeave</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Helpers.StackEntryAnalysis.InstructionWithLeave.Copy(Mono.Cecil.Cil.Instruction)">
+            <summary>
+            Returns a new InstructionWithLeave with the same LeaveStack and another instruction.
+            </summary>
+            <param name="instruction">The new instruction.</param>
+            <returns>a new InstructionWithLeave</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Helpers.StackEntryAnalysis.InstructionWithLeave.Pop">
+            <summary>
+            Returns a new InstructionWithLeave with the one leave statement popped and instruction set to the operand of the popped leave statement.
+            </summary>
+            <returns>a new InstructionWithLeave</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Helpers.StackEntryAnalysis.GetStackEntryUsage(Mono.Cecil.Cil.Instruction)">
+            <summary>
+            Searches a method for usage of the value pushed onto the stack by the specified instruction.
+            </summary>
+            <param name="ins">The instruction.</param>
+            <returns>An array of UsageResults containing the instructions that use the value and the stack offset of the entry at that instruction. A StackOffset of 0 means right on top of the stack.</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Helpers.StackEntryAnalysis.CheckUsedBy(System.Int32)">
+            <summary>
+            Iterates over all Instructions inside UsedBy and spawns a new alternative if necessary.
+            </summary>
+            <param name="start">The first index to progress.</param>
+        </member>
+        <member name="M:Gendarme.Framework.Helpers.StackEntryAnalysis.FollowStackEntry(Gendarme.Framework.Helpers.StackEntryAnalysis.InstructionWithLeave,System.Int32)">
+            <summary>
+            Follows the instructions until the specified stack entry is accessed.
+            </summary>
+            <param name="startInstruction">The first instruction.</param>
+            <param name="stackEntryDistance">The distance of the stack entry from the top of the stack. 0 means right on top.</param>
+            <returns>The instruction that pops the stackEntry and the distance of the entry to the top of the stack. If no valid instruction if found the method returns InstructionWithLeave.Empty.</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Helpers.StackEntryAnalysis.FindLoad(Gendarme.Framework.Helpers.StackEntryAnalysis.InstructionWithLeave,Gendarme.Framework.Helpers.StackEntryAnalysis.StoreSlot)">
+            <summary>
+            Follows the codeflow starting at a given instruction and finds all loads for a given slot.
+            Continues and follows all branches until the slot is overwritten or the method returns / throws.
+            </summary>
+            <param name="insWithLeave">The first instruction to start the search at.</param>
+            <param name="slot">The slot to search.</param>
+            <returns>An array of instructions that load from the slot.</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Helpers.StackEntryAnalysis.GetNextInstruction(Mono.Cecil.Cil.Instruction,System.Object@)">
+            <summary>
+            Helper method that returns the next Instruction.
+            </summary>
+            <param name="ins">The instruction</param>
+            <param name="alternative">If the instruction is a branch, the branch target is returned. For a switch statemant an array of targets is returned.</param>
+            <returns>The next instruction that would be executed by the runtime.</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Helpers.StackEntryAnalysis.GetLoadSlot(Mono.Cecil.Cil.Instruction)">
+            <summary>
+            Checks if an instruction is a load and returns the slot it loads from.
+            </summary>
+            <param name="ins">The instruction</param>
+            <returns>If the instruction is a load returns the slot to load. Check slot.IsNone() to see if this instruction is a load.</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Helpers.StackEntryAnalysis.GetStoreSlot(Mono.Cecil.Cil.Instruction)">
+            <summary>
+            Checks if an instruction is a store and returns the slot.
+            </summary>
+            <param name="ins">The instruction</param>
+            <returns>If the instruction is a store returns the slot to store. Check slot.IsNone() to see if this instruction is a store.</returns>
+        </member>
+        <member name="T:Gendarme.Framework.Helpers.StackEntryUsageResult">
+            <summary>
+            Represents a usage of a StackEntry
+            </summary>
+        </member>
+        <member name="F:Gendarme.Framework.Helpers.StackEntryUsageResult.Instruction">
+            <summary>
+            The instruction that uses the StackEntry
+            </summary>
+        </member>
+        <member name="F:Gendarme.Framework.Helpers.StackEntryUsageResult.StackOffset">
+            <summary>
+            The positive offset of the StackEntry before the instruction executes. 0 means right on top.
+            </summary>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.AssemblyRocks.References(Mono.Cecil.AssemblyDefinition,System.String)">
+            <summary>
+            Check if the AssemblyName is reference by the assembly.
+            </summary>
+            <param name="self">The AssemblyDefinition on which the extension method can be called.</param>
+            <param name="assemblyName">AssemblyName of the reference</param>
+            <returns>True if any of the assembly's modules reference the assembly name, false otherwise.</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.MetadataTokenProviderRock.GetAssembly(Mono.Cecil.IMetadataTokenProvider)">
+            <summary>
+            Return the AssemblyDefinition that correspond to the IMetadataTokenProvider
+            based object.
+            </summary>
+            <param name="self">The IMetadataTokenProvider instance where the method is applied.</param>
+            <returns>The AssemblyDefinition associated with the IMetadataTokenProvider or null
+            if none can be found</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.MetadataTokenProviderRock.Equals(Mono.Cecil.IMetadataTokenProvider,Mono.Cecil.IMetadataTokenProvider)">
+            <summary>
+            Compare IMetadataTokenProvider instances based on their metadata token and their
+            assembly.
+            </summary>
+            <param name="self">The IMetadataTokenProvider instance where the method is applied.</param>
+            <param name="other">The IMetadataTokenProvider instance to compare to</param>
+            <returns>True if the metadata tokens and assembly are identical, False otherwise</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.MetadataTokenProviderRock.GetFullName(Mono.Cecil.MemberReference)">
+            <summary>
+            Get the string value of the MemberReference FullName property without the cost
+            of allocating a new string for each (or most) calls.
+            </summary>
+            <param name="self">The MemberReference instance where the method is applied.</param>
+            <returns>The cached FullName property of the MemberReference</returns>
+            <remarks>Cecil needs to rebuild most of the FullName properties on each call in order to
+            be able to write assemblies. However this is a waste of memory when an application, like
+            Gendarme, use it for read-only purposes.</remarks>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.CollectionRocks.AddIfNew``1(System.Collections.Generic.ICollection{``0},``0)">
+            <summary>
+            Checks if the list does not contain the item. If so the item is added.
+            </summary>
+            <typeparam name="T">
+            </typeparam>
+            <param name="self">The list.</param>
+            <param name="item">The item to add.</param>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.SystemRocks.IsEmpty(System.Version)">
+            <summary>
+            Check if a Version is empty (all zeros).
+            </summary>
+            <param name="self">The Version to check</param>
+            <returns>True if empty, False otherwise.</returns>
+        </member>
+        <member name="T:Gendarme.Framework.Rocks.CustomAttributeRocks">
+            <summary>
+            CustomAttributeRocks contains extensions methods for CustomAttribute
+            and the related collection classes.
+            </summary>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.CustomAttributeRocks.HasAttribute(Mono.Cecil.ICustomAttributeProvider,System.String,System.String)">
+            <summary>
+            Check if the type contains an attribute of a specified type.
+            </summary>
+            <param name="self">The ICustomAttributeProvider (e.g. AssemblyDefinition, TypeReference, MethodReference,
+            FieldReference...) on which the extension method can be called.</param>
+            <param name="nameSpace">The namespace of the attribute to be matched</param>
+            <param name="name">The name of the attribute to be matched</param>
+            <returns>True if the provider contains an attribute of the same name,
+            False otherwise.</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.FieldRocks.IsGeneratedCode(Mono.Cecil.FieldReference)">
+            <summary>
+            Check if the field was generated by the compiler or a tool (i.e. not by the developer).
+            This can occurs (compiler) with auto-implemented properties (C# 3)
+            </summary>
+            <param name="self">The FieldReference on which the extension method can be called.</param>
+            <returns>True if the field was not added directly by the developer, False otherwise</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.FieldRocks.IsVisible(Mono.Cecil.FieldReference)">
+            <summary>
+            Check if the field is visible outside of the assembly.
+            </summary>
+            <param name="self">The FieldReference on which the extension method can be called.</param>
+            <returns>True if the field can be used from outside of the assembly, false otherwise.</returns>
+        </member>
+        <member name="T:Gendarme.Framework.Rocks.InstructionRocks">
+            <summary>
+            InstructionRocks contains extensions methods for Instruction
+            and the related collection classes.
+            </summary>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.InstructionRocks.GetField(Mono.Cecil.Cil.Instruction)">
+            <summary>
+            Get the FieldDefinition associated with the Instruction.
+            </summary>
+            <param name="self">The Instruction on which the extension method can be called.</param>
+            <returns>The FieldDefinition associated with the instruction
+            or null if the instruction does apply to fields.</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.InstructionRocks.GetMethod(Mono.Cecil.Cil.Instruction)">
+            <summary>
+            Get the MethodReference or MethodDefinition (but not a CallSite) associated with the Instruction
+            </summary>
+            <param name="self">The Instruction on which the extension method can be called.</param>
+            <returns>
+            </returns>
+            <remarks>Older (pre 0.9) Cecil CallSite did not inherit from MethodReference so this was not an issue</remarks>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.InstructionRocks.GetOperand(Mono.Cecil.Cil.Instruction,Mono.Cecil.MethodDefinition)">
+            <summary>
+            Return the operand of the Instruction. For macro instruction the operand is constructed.
+            </summary>
+            <param name="self">The Instruction on which the extension method can be called.</param>
+            <param name="method">The method inside which the instruction comes from.</param>
+            <returns>Return the operand that the non-macro version of this Instruction would have.</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.InstructionRocks.GetOperandType(Mono.Cecil.Cil.Instruction,Mono.Cecil.MethodDefinition)">
+            <summary>
+            Return the type associated with the instruction's operand (INCOMPLETE).
+            </summary>
+            <param name="self">The Instruction on which the extension method can be called.</param>
+            <param name="method">The method inside which the instruction comes from.</param>
+            <returns>Return a TypeReference compatible with the instruction operand or null.</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.InstructionRocks.GetParameter(Mono.Cecil.Cil.Instruction,Mono.Cecil.MethodDefinition)">
+            <summary>
+            Get the ParameterDefinition associated with the Instruction.
+            </summary>
+            <param name="self">The Instruction on which the extension method can be called.</param>
+            <param name="method">The method inside which the instruction comes from.
+            Needed for the macro instruction where only the variable index is available.</param>
+            <returns>The ParameterDefinition associated with the instruction
+            or null if the instruction does apply to arguments.</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.InstructionRocks.GetPopCount(Mono.Cecil.Cil.Instruction,Mono.Cecil.IMethodSignature)">
+            <summary>
+            Get the number of values removed on the stack for this instruction.
+            </summary>
+            <param name="self">The Instruction on which the extension method can be called.</param>
+            <param name="method">The method inside which the instruction comes from
+            (needed for StackBehaviour.Varpop).</param>
+            <returns>The number of value removed (pop) from the stack for this instruction.</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.InstructionRocks.GetPushCount(Mono.Cecil.Cil.Instruction)">
+            <summary>
+            Get the number of values placed on the stack by this instruction.
+            </summary>
+            <param name="self">The Instruction on which the extension method can be called.</param>
+            <returns>The number of value added (push) to the stack by this instruction.</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.InstructionRocks.GetVariable(Mono.Cecil.Cil.Instruction,Mono.Cecil.MethodDefinition)">
+            <summary>
+            Get the VariableDefinition associated with the Instruction.
+            </summary>
+            <param name="self">The Instruction on which the extension method can be called.</param>
+            <param name="method">The method inside which the instruction comes from.
+            Needed for the macro instruction where only the variable index is available.</param>
+            <returns>The VariableDefinition associated with the instruction
+            or null if the instruction does apply to local variables.</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.InstructionRocks.Is(Mono.Cecil.Cil.Instruction,Mono.Cecil.Cil.Code)">
+            <summary>
+            Helper method to avoid patterns like "ins.Previous != null &amp;&amp; ins.Previous.OpCode.Code == Code.Newobj"
+            and replace it with a shorter "ins.Previous.Is (Code.Newobj)".
+            </summary>
+            <param name="self">The Instruction on which the extension method can be called.</param>
+            <param name="code">The Code to compare to.</param>
+            <returns>True if the instruction's code match the specified argument, False otherwise</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.InstructionRocks.IsLoadArgument(Mono.Cecil.Cil.Instruction)">
+            <summary>
+            Return if the Instruction is a load of an argument (ldarg* family).
+            </summary>
+            <param name="self">The Instruction on which the extension method can be called.</param>
+            <returns>True if the instruction is a load argument/parameter, False otherwise</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.InstructionRocks.IsLoadElement(Mono.Cecil.Cil.Instruction)">
+            <summary>
+            Return if the Instruction is the load of an element (ldelem* family)
+            </summary>
+            <param name="self">The Instruction on which the extension method can be called.</param>
+            <returns>True if the instruction is a load element, False otherwise</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.InstructionRocks.IsLoadIndirect(Mono.Cecil.Cil.Instruction)">
+            <summary>
+            Return if the Instruction is a load indirect (ldind* family)
+            </summary>
+            <param name="self">The Instruction on which the extension method can be called.</param>
+            <returns>True if the instruction is a load indirect, False otherwise</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.InstructionRocks.IsLoadLocal(Mono.Cecil.Cil.Instruction)">
+            <summary>
+            Return if the Instruction is a load of a local variable (ldloc* family).
+            </summary>
+            <param name="self">The Instruction on which the extension method can be called.</param>
+            <returns>True if the instruction is a load local variable, False otherwise</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.InstructionRocks.IsOperandZero(Mono.Cecil.Cil.Instruction)">
+            <summary>
+            Determine if the instruction operand contains the constant zero (0).
+            </summary>
+            <param name="self">The Instruction on which the extension method can be called.</param>
+            <returns>True if the operand contains the constant zero (0), False otherwise</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.InstructionRocks.IsStoreArgument(Mono.Cecil.Cil.Instruction)">
+            <summary>
+            Return if the Instruction is a store of an argument (starg* family).
+            </summary>
+            <param name="self">The Instruction on which the extension method can be called.</param>
+            <returns>True if the instruction is a store of a parameter, False otherwise</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.InstructionRocks.IsStoreLocal(Mono.Cecil.Cil.Instruction)">
+            <summary>
+            Return if the Instruction is a store of a local variable (stloc* family).
+            </summary>
+            <param name="self">The Instruction on which the extension method can be called.</param>
+            <returns>True if the instruction is a store local variable, False otherwise</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.InstructionRocks.TraceBack(Mono.Cecil.Cil.Instruction,Mono.Cecil.IMethodSignature)">
+            <summary>
+            Return the instruction that match the current instruction. This is computed by
+            substracting push and adding pop counts until the total becomes zero.
+            </summary>
+            <param name="self">The Instruction on which the extension method can be called.</param>
+            <param name="method">The method from which the instruction was extracted.</param>
+            <returns>The instruction that match the current instruction.</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.InstructionRocks.TraceBack(Mono.Cecil.Cil.Instruction,Mono.Cecil.IMethodSignature,System.Int32)">
+            <summary>
+            Return the instruction that match the current instruction. This is computed by
+            substracting push and adding pop counts until the total becomes zero.
+            </summary>
+            <param name="self">The Instruction on which the extension method can be called.</param>
+            <param name="method">The method from which the instruction was extracted.</param>
+            <param name="offset">Offset to add the the Pop count. Useful to track several parameters to a method.</param>
+            <returns>The instruction that match the current instruction.</returns>
+        </member>
+        <member name="T:Gendarme.Framework.Rocks.MethodRocks">
+            <summary>
+            MethodRocks contains extensions methods for Method[Definition|Reference]
+            and the related collection classes.
+            Note: whenever possible try to use MethodReference since it's extend the
+            reach/usability of the code.
+            </summary>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.MethodRocks.IsEntryPoint(Mono.Cecil.MethodReference)">
+            <summary>
+            Check if the MethodReference is defined as the entry point of it's assembly.
+            </summary>
+            <param name="self">The MethodReference on which the extension method can be called.</param>
+            <returns>True if the method is defined as the entry point of it's assembly, False otherwise</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.MethodRocks.IsFinalizer(Mono.Cecil.MethodReference)">
+            <summary>
+            Check if the MethodReference is a finalizer.
+            </summary>
+            <param name="self">The MethodReference on which the extension method can be called.</param>
+            <returns>True if the method is a finalizer, False otherwise.</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.MethodRocks.IsGeneratedCode(Mono.Cecil.MethodReference)">
+            <summary>
+            Check if the method, or it's declaring type, was generated by the compiler or a tool (i.e. not by the developer).
+            </summary>
+            <param name="self">The MethodReference on which the extension method can be called.</param>
+            <returns>True if the code is not generated directly by the developer,
+            False otherwise (e.g. compiler or tool generated)</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.MethodRocks.IsMain(Mono.Cecil.MethodReference)">
+            <summary>
+            Check if the signature of a method is consitent for it's use as a Main method.
+            Note: it doesn't check that the method is the EntryPoint of it's assembly.
+            <code>
+            static [void|int] Main ()
+            static [void|int] Main (string[] args)
+            </code></summary>gre
+            <param name="self">The MethodReference on which the extension method can be called.</param><returns>True if the method is a valid Main, False otherwise.</returns></member>
+        <member name="M:Gendarme.Framework.Rocks.MethodRocks.IsOverride(Mono.Cecil.MethodReference)">
+            <summary>
+            Check if a method is an override to a virtual method of a base type.
+            </summary>
+            <param name="self">The MethodReference on which the extension method can be called.</param>
+            <returns>True if the method is an override to a virtual method, False otherwise</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.MethodRocks.IsProperty(Mono.Cecil.MethodReference)">
+            <summary>
+            Check if the method corresponds to the get or set operation on a property.
+            </summary>
+            <param name="self">The MethodReference on which the extension method can be called.</param>
+            <returns>True if the method is a getter or a setter, False otherwise</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.MethodRocks.IsVisible(Mono.Cecil.MethodReference)">
+            <summary>
+            Check if the method is visible outside of the assembly.
+            </summary>
+            <param name="self">The MethodReference on which the extension method can be called.</param>
+            <returns>True if the method can be used from outside of the assembly, false otherwise.</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.MethodRocks.IsEventCallback(Mono.Cecil.MethodReference)">
+            <summary>
+            Check if the method has the signature of an Event callback.
+            They are usually of the form: void Method (object sender, EventArgs ea), where
+            the second parameters is either EventArgs or a subclass of it
+            </summary>
+            <param name="self">The MethodReference on which the extension method can be called.</param>
+            <returns>True if the method has the signature of an event callback.</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.MethodRocks.GetPropertyByAccessor(Mono.Cecil.MethodReference)">
+            <summary>
+            Returns a property using supplied MethodReference of
+            a property accessor method (getter or setter).
+            </summary>
+            <param name="self">The MethodReference on which the extension method can be called.</param>
+            <returns>PropertyDefinition which corresponds to the supplied MethodReference.</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.MethodRocks.CompareSignature(Mono.Cecil.IMethodSignature,Mono.Cecil.IMethodSignature)">
+            <summary>
+            Compare the IMethodSignature members with the one being specified.
+            </summary>
+            <param name="self">&gt;The IMethodSignature on which the extension method can be called.</param>
+            <param name="signature">The IMethodSignature which is being compared.</param>
+            <returns>True if the IMethodSignature members are identical, false otherwise</returns>
+        </member>
+        <member name="T:Gendarme.Framework.Rocks.ModuleRocks">
+            <summary>
+            ModuleRocks contains extensions methods for ModuleDefinition
+            and the related collection classes.
+            </summary>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.ModuleRocks.LoadDebuggingSymbols(Mono.Cecil.ModuleDefinition)">
+            <summary>
+            Load, if available, the debugging symbols associated with the module. This first
+            try to load a MDB file (symbols from the Mono:: runtime) and then, if not present
+            and running on MS.NET, try to load a PDB file (symbols from MS runtime).
+            </summary>
+            <param name="self">
+            </param>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.ModuleRocks.GetAllTypes(Mono.Cecil.ModuleDefinition)">
+            <summary>
+            Return an IEnumerable that allows a single loop (like a foreach) to
+            traverse all types that are defined in a module.
+            </summary>
+            <param name="self">The ModuleDefinition on which the extension method can be called.</param>
+            <returns>An IEnumerable to traverse every types of the module</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.ModuleRocks.AnyMemberReference(Mono.Cecil.ModuleDefinition,System.Func{Mono.Cecil.MemberReference,System.Boolean})">
+            <summary>
+            Check if any MemberReference, referenced by the current ModuleDefinition, satisfies the
+            specified predicate.
+            </summary>
+            <param name="self">The ModuleDefinition on which the extension method can be called.</param>
+            <param name="predicate">The condition to execute on a provided MemberReference</param>
+            <returns>True if 'predicate' returns true for any MemberReference in the module's referenced types.</returns>
+            <remarks>Cecil's GetMemberReferences method will allocate a new array each time it is called.
+            This extension method will cache the IEnumerable, on the first use, to reduce memory consumption.</remarks>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.ModuleRocks.AnyTypeReference(Mono.Cecil.ModuleDefinition,System.Func{Mono.Cecil.TypeReference,System.Boolean})">
+            <summary>
+            Check if any TypeReference, referenced by the current ModuleDefinition, satisfies the
+            specified predicate.
+            </summary>
+            <param name="self">The ModuleDefinition on which the extension method can be called.</param>
+            <param name="predicate">The condition to execute on a provided TypeReference</param>
+            <returns>True if 'predicate' returns true for any TypeReference in the module's referenced types.</returns>
+            <remarks>Cecil's GetTypeReferences method will allocate a new array each time it is called.
+            This extension method will cache the IEnumerable, on the first use, to reduce memory consumption.</remarks>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.ParameterRocks.IsParams(Mono.Cecil.ParameterDefinition)">
+            <summary>
+            Check if the parameter represents a list of parameters (<c>params</c> keyword in C#)
+            </summary>
+            <param name="self">The ParameterDefinition on which the extension method can be called.</param>
+            <returns>True if the parameter represents a list of parameters, false otherwise.</returns>
+        </member>
+        <member name="T:Gendarme.Framework.Rocks.PropertyRocks">
+            <summary>
+            PropertyRocks contains extensions methods for Property[Definition|Reference]
+            and the related collection classes.
+            </summary>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.PropertyRocks.IsGeneratedCode(Mono.Cecil.PropertyDefinition)">
+            <summary>
+            Check if the property, or it's declaring type, was generated by the compiler or a tool (i.e. not by the
+            developer). This is especially important since automatic properties getter and setter methods are marked
+            as generated code (because the compiler generates them with a backing field) while the property itself is
+            not (because it comes from the developer source code).
+            </summary>
+            <param name="self">The PropertyDefinition on which the extension method can be called.</param>
+            <returns>True if the code is not generated directly by the developer,
+            False otherwise (e.g. compiler or tool generated)</returns>
+        </member>
+        <member name="T:Gendarme.Framework.Rocks.TypeRocks">
+            <summary>
+            TypeRocks contains extensions methods for Type[Definition|Reference]
+            and the related collection classes.
+            Note: whenever possible try to use TypeReference since it's extend the
+            reach/usability of the code.
+            </summary>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.TypeRocks.AllSuperTypes(Mono.Cecil.TypeReference)">
+            <summary>
+            Returns an IEnumerable that allows a single loop (like a foreach) to
+            traverse all base classes and interfaces inherited by the type.
+            </summary>
+            <param name="self">The TypeReference on which the extension method can be called.</param>
+            <returns>An IEnumerable to traverse all base classes and interfaces.</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.TypeRocks.GetMethod(Mono.Cecil.TypeReference,Gendarme.Framework.Helpers.MethodSignature)">
+            <summary>
+            Returns the first MethodDefinition that satisfies a given MethodSignature.
+            </summary>
+            <param name="self">The TypeReference on which the extension method can be called.</param>
+            <param name="signature">The MethodSignature to match.</param>
+            <returns>The first MethodDefinition for wich signature.Matches returns true.</returns>
+            <remarks>
+            Do not allocate a MethodSignature for only one call. Use one of the other GetMethod overloads instead.
+            </remarks>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.TypeRocks.GetMethod(Mono.Cecil.TypeReference,Mono.Cecil.MethodAttributes,System.String,System.String,System.String[],System.Func{Mono.Cecil.MethodDefinition,System.Boolean})">
+            <summary>
+            Searches for a method.
+            </summary>
+            <param name="self">The TypeReference on which the extension method can be called.</param>
+            <param name="attributes">An attribute mask matched against the attributes of the method.</param>
+            <param name="name">The name of the method to match. Ignored if null.</param>
+            <param name="returnType">The full name (Namespace.Type) of the return type. Ignored if null.</param>
+            <param name="parameters">An array of full names (Namespace.Type) of parameter types. Ignored if null. Null entries act as wildcards.</param>
+            <param name="customCondition">A custom condition that is called for each MethodDefinition that satisfies all other conditions. Ignored if null.</param>
+            <returns>The first MethodDefinition that satisfies all conditions.</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.TypeRocks.GetMethod(Mono.Cecil.TypeReference,Mono.Cecil.MethodAttributes,System.String,System.String,System.String[])">
+            <summary>
+            Searches for a method by name, returnType, parameters and attributes.
+            </summary>
+            <param name="self">The TypeReference on which the extension method can be called.</param>
+            <param name="attributes">An attribute mask matched against the attributes of the method.</param>
+            <param name="name">The name of the method to match. Ignored if null.</param>
+            <param name="returnType">The full name (Namespace.Type) of the return type. Ignored if null.</param>
+            <param name="parameters">An array of full names (Namespace.Type) of parameter types. Ignored if null. Null entries act as wildcard.</param>
+            <returns>The first MethodDefinition that satisfies all conditions.</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.TypeRocks.GetMethod(Mono.Cecil.TypeReference,Mono.Cecil.MethodAttributes,System.String)">
+            <summary>
+            Searches for a method by attributes and by name.
+            </summary>
+            <param name="self">The TypeReference on which the extension method can be called.</param>
+            <param name="attributes">An attribute mask matched against the attributes of the method.</param>
+            <param name="name">The name of the method to match. Ignored if null.</param>
+            <returns>The first MethodDefinition that satisfies all conditions.</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.TypeRocks.GetMethod(Mono.Cecil.TypeReference,System.String,System.String,System.String[])">
+            <summary>
+            Searches for a method by name, returnType and parameters.
+            </summary>
+            <param name="self">The TypeReference on which the extension method can be called.</param>
+            <param name="name">The name of the method to match. Ignored if null.</param>
+            <param name="returnType">The full name (Namespace.Type) of the return type. Ignored if null.</param>
+            <param name="parameters">An array of full names (Namespace.Type) of parameter types. Ignored if null. Null entries act as wildcards.</param>
+            <returns>The first MethodDefinition that satisfies all conditions.</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.TypeRocks.GetMethod(Mono.Cecil.TypeReference,System.String)">
+            <summary>
+            Searches for a method with a specific name.
+            </summary>
+            <param name="self">The TypeReference on which the extension method can be called.</param>
+            <param name="name">The name of the method to match.</param>
+            <returns>The first MethodDefinition with a specifiy name.</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.TypeRocks.GetMethod(Mono.Cecil.TypeReference,System.Func{Mono.Cecil.MethodDefinition,System.Boolean})">
+            <summary>
+            Searches for a method using a custom condition.
+            </summary>
+            <param name="self">The TypeReference on which the extension method can be called.</param>
+            <param name="customCondition">A custom condition that is called for each MethodDefinition.</param>
+            <returns>The first MethodDefinition that satisfies the customCondition.</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.TypeRocks.HasMethod(Mono.Cecil.TypeReference,Gendarme.Framework.Helpers.MethodSignature)">
+            <summary>
+            Checks if at least one Method satisfies a given MethodSignature.
+            </summary>
+            <param name="self">The TypeReference on which the extension method can be called.</param>
+            <param name="signature">The MethodSignature to match.</param>
+            <returns>True if at least one method matches the signature. Otherwise false.</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.TypeRocks.Implements(Mono.Cecil.TypeReference,System.String,System.String)">
+            <summary>
+            Recursively check if the type implemented a specified interface. Note that it is possible
+            that we might now be able to know everything that a type implements since the assembly
+            where the information resides could be unavailable. False is returned in this case.
+            </summary>
+            <param name="self">The TypeDefinition on which the extension method can be called.</param>
+            <param name="nameSpace">The namespace of the interface to be matched</param>
+            <param name="name">The name of the interface to be matched</param>
+            <returns>True if we found that the type implements the interface, False otherwise (either it
+            does not implement it, or we could not find where it does).</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.TypeRocks.Inherits(Mono.Cecil.TypeReference,System.String,System.String)">
+            <summary>
+            Check if the type inherits from the specified type. Note that it is possible that
+            we might not be able to know the complete inheritance chain since the assembly
+            where the information resides could be unavailable.
+            </summary>
+            <param name="self">The TypeReference on which the extension method can be called.</param>
+            <param name="nameSpace">The namespace of the base class to be matched</param>
+            <param name="name">The name of the base class to be matched</param>
+            <returns>True if the type inherits from specified class, False otherwise</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.TypeRocks.IsNamed(Mono.Cecil.TypeReference,System.String,System.String)">
+            <summary>
+            Check if the type and its namespace are named like the provided parameters.
+            This is preferred to checking the FullName property since the later can allocate (string) memory.
+            </summary>
+            <param name="self">The TypeReference on which the extension method can be called.</param>
+            <param name="nameSpace">The namespace to be matched</param>
+            <param name="name">The type name to be matched</param>
+            <returns>True if the type is namespace and name match the arguments, False otherwise</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.TypeRocks.IsNamed(Mono.Cecil.TypeReference,System.String)">
+            <summary>
+            Check if the type full name match the provided parameter.
+            Note: prefer the overload where the namespace and type name can be supplied individually
+            </summary>
+            <param name="self">The TypeReference on which the extension method can be called.</param>
+            <param name="fullName">The full name to be matched</param>
+            <returns>True if the type is namespace and name match the arguments, False otherwise</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.TypeRocks.IsAttribute(Mono.Cecil.TypeReference)">
+            <summary>
+            Checks if type is attribute. Note that it is possible that
+            we might now be able to know all inheritance since the assembly where
+            the information resides could be unavailable.
+            </summary>
+            <param name="self">The TypeReference on which the extension method can be called.</param>
+            <returns>True if the type inherits from <c>System.Attribute</c>,
+            False otherwise.</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.TypeRocks.IsDelegate(Mono.Cecil.TypeReference)">
+            <summary>
+            Check if the type is a delegate.
+            </summary>
+            <param name="self">The TypeReference on which the extension method can be called.</param>
+            <returns>True if the type is a delegate, False otherwise.</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.TypeRocks.IsFlags(Mono.Cecil.TypeReference)">
+            <summary>
+            Check if the type is a enumeration flags.
+            </summary>
+            <param name="self">The TypeReference on which the extension method can be called.</param>
+            <returns>True if the type as the [Flags] attribute, false otherwise.</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.TypeRocks.IsFloatingPoint(Mono.Cecil.TypeReference)">
+            <summary>
+            Check if the type represent a floating-point type.
+            </summary>
+            <param name="self">The TypeReference on which the extension method can be called.</param>
+            <returns>True if the type is System.Single (C# float) or System.Double (C3 double), False otherwise.</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.TypeRocks.IsGeneratedCode(Mono.Cecil.TypeReference)">
+            <summary>
+            Check if the type is generated code, either by the compiler or by a tool.
+            </summary>
+            <param name="self">The TypeReference on which the extension method can be called.</param>
+            <returns>True if the code is not generated directly by the developer,
+            False otherwise (e.g. compiler or tool generated)</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.TypeRocks.IsNative(Mono.Cecil.TypeReference)">
+            <summary>
+            Check if the type refers to native code.
+            </summary>
+            <param name="self">The TypeReference on which the extension method can be called.</param>
+            <returns>True if the type refers to native code, False otherwise</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.TypeRocks.IsStatic(Mono.Cecil.TypeReference)">
+            <summary>
+            Check if the type is static (2.0+)
+            </summary>
+            <param name="self">The TypeReference on which the extension method can be called.</param>
+            <returns>True if the type is static, false otherwise.</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.TypeRocks.IsVisible(Mono.Cecil.TypeReference)">
+            <summary>
+            Check if the type is visible outside of the assembly.
+            </summary>
+            <param name="self">The TypeReference on which the extension method can be called.</param>
+            <returns>True if the type can be used from outside of the assembly, false otherwise.</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Rocks.VariableDefinitionRocks.IsGeneratedName(Mono.Cecil.Cil.VariableReference)">
+            <summary>
+            Check if the local variable has a name which was generated by the compiler.
+            Note that this will return true for all variables if debugging information is not present.
+            </summary>
+            <param name="self">The VariableReference on which the extension method can be called.</param>
+            <returns>True if the field name was generated by the compiler, False otherwise</returns>
+        </member>
+        <member name="T:Gendarme.Framework.BasicIgnoreList">
+            <summary>
+            Basic ignore list implementation.
+            </summary>
+        </member>
+        <member name="T:Gendarme.Framework.Bitmask`1">
+            <summary>
+            Provide a bitmask, up to 64 bits, based on an enum or integral value
+            (sadly this can't be restricted to enums/integral types using 'where').
+            </summary>
+            <typeparam name="T">Type on which the bitmask is based.</typeparam>
+        </member>
+        <member name="M:Gendarme.Framework.Bitmask`1.#ctor">
+            <summary>
+            Construct a bitmask will all bits clear.
+            </summary>
+        </member>
+        <member name="M:Gendarme.Framework.Bitmask`1.#ctor(System.Boolean)">
+            <summary>
+            Construct a bitmask will all bits set (true) or clear (false)
+            </summary>
+            <param name="initialValues">
+            </param>
+        </member>
+        <member name="M:Gendarme.Framework.Bitmask`1.Clear(`0)">
+            <summary>
+            Clear the bit represent by the parameter.
+            </summary>
+            <param name="bit">Value to clear in the bitmask</param>
+        </member>
+        <member name="M:Gendarme.Framework.Bitmask`1.ClearAll">
+            <summary>
+            Clear all bits
+            </summary>
+        </member>
+        <member name="M:Gendarme.Framework.Bitmask`1.Get(`0)">
+            <summary>
+            Get the bit represented by the parameter
+            </summary>
+            <param name="bit">Value to get in the bitmask</param>
+            <returns>True if the bit is set, false otherwise.</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Bitmask`1.Set(`0)">
+            <summary>
+            Set the bit represented by the parameter
+            </summary>
+            <param name="bit">Value to set in the bitmask</param>
+        </member>
+        <member name="M:Gendarme.Framework.Bitmask`1.SetAll">
+            <summary>
+            Set all bits
+            </summary>
+        </member>
+        <member name="M:Gendarme.Framework.Bitmask`1.SetDown(`0)">
+            <summary>
+            Set all bits, from 'value' down to 0.
+            </summary>
+            <param name="bit">
+            </param>
+        </member>
+        <member name="M:Gendarme.Framework.Bitmask`1.SetUp(`0)">
+            <summary>
+            Set all bits, from 'value' up to the maximum.
+            </summary>
+            <param name="bit">
+            </param>
+        </member>
+        <member name="M:Gendarme.Framework.Bitmask`1.Intersect(Gendarme.Framework.Bitmask{`0})">
+            <summary>
+            Does this bitmask intersects with the specified bitmask.
+            </summary>
+            <param name="bitmask">Bitmask to compare</param>
+            <returns>True if the bitmask intersects with the specified bitmask, False otherwise.</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Bitmask`1.IsSubsetOf(Gendarme.Framework.Bitmask{`0})">
+            <summary>
+            Is this bitmask a subset of the specified bitmask.
+            </summary>
+            <param name="bitmask">Bitmask to compare (potential superset)</param>
+            <returns>True if the bitmask is a subset of the specified bitmask, False otherwise.</returns>
+        </member>
+        <member name="T:Gendarme.Framework.Confidence">
+            <summary>
+            The level of confidence about the rule results. The more
+            confidence the less likely the rule will return false positives.
+            </summary>
+        </member>
+        <member name="F:Gendarme.Framework.Confidence.Total">
+            <summary>
+            The rule is 100% certain of its result.
+            There should never be false positives for Total.
+            </summary>
+        </member>
+        <member name="F:Gendarme.Framework.Confidence.High">
+            <summary>
+            The rule is near 100% certain of its result.
+            A few false-positives are possible.
+            </summary>
+        </member>
+        <member name="F:Gendarme.Framework.Confidence.Normal">
+            <summary>
+            The rule has found a potential defect but cannot be certain of the result.
+            Some false positive are to be expected in the results.
+            </summary>
+        </member>
+        <member name="F:Gendarme.Framework.Confidence.Low">
+            <summary>
+            The rule doesn't have enough information to be certain about the defect.
+            Many of the results are likely to be false positives.
+            By default some runners wont display results if the confidence on the defect is low.
+            </summary>
+        </member>
+        <member name="M:Gendarme.Framework.Engine.Initialize(Gendarme.Framework.EngineController)">
+            <summary>
+            Override to attach to some of the controller events
+            </summary>
+            <param name="controller">
+            </param>
+        </member>
+        <member name="M:Gendarme.Framework.Engine.TearDown">
+            <summary>
+            Note: TearDown can be called without a call to Engine.Register or
+            Engine.Initialize
+            </summary>
+        </member>
+        <member name="T:Gendarme.Framework.EngineDependencyAttribute">
+            <summary>
+            This attribute is needed to declare that a rule depends on an a engine.
+            This guarantee that the engine will have done it's job prior to the
+            Runner calls into the rules Check* methods
+            </summary>
+        </member>
+        <member name="T:Gendarme.Framework.FxCopCompatibilityAttribute">
+            <summary>
+            Attribute to map Gendarme rules with their (quasi)equivalent in FxCop.
+            It's possible for a Gendarme rule to implement several FxCop rules.
+            </summary>
+        </member>
+        <member name="M:Gendarme.Framework.FxCopCompatibilityAttribute.#ctor(System.String,System.String)">
+            <summary>
+            Create an mapping between the Gendarme rule and a FxCop rule
+            </summary>
+            <param name="category">FxCop rule category</param>
+            <param name="checkId">FxCop rule identifier (2 letters, 4 numbers)</param>
+        </member>
+        <member name="P:Gendarme.Framework.FxCopCompatibilityAttribute.Category">
+            <summary>
+            Rule category.
+            e.g. "Microsoft.Usage"
+            </summary>
+        </member>
+        <member name="P:Gendarme.Framework.FxCopCompatibilityAttribute.CheckId">
+            <summary>
+            Rule identifier. The identifier is not guaranteed to be unique without it's category.
+            e.g. "CA2232:MarkWindowsFormsEntryPointsWithStaThread" (recommanded) or
+            or simply "CA2232" (harder to maintain)
+            </summary>
+        </member>
+        <member name="T:Gendarme.Framework.IIgnoreList">
+            <summary>
+            This interface defines how to query the ignore list
+            </summary>
+        </member>
+        <member name="T:Gendarme.Framework.IRule">
+            <summary>
+            Most basic way to manipulate a rule. To create a new rule you should consider
+            to inherit from Rule and implement IAssemblyRule, ITypeRule and/or IMethodRule.
+            </summary>
+        </member>
+        <member name="P:Gendarme.Framework.IRule.Active">
+            <summary>
+            Turn on or off the rule. The runner won't call a Check* method on rules
+            where Active is false. This is useful when used with the runner's events
+            to turn off a rule if we know it's useless (e.g. for an assembly).
+            </summary>
+        </member>
+        <member name="P:Gendarme.Framework.IRule.Runner">
+            <summary>
+            Return the instance of the current runner.
+            </summary>
+        </member>
+        <member name="P:Gendarme.Framework.IRule.Name">
+            <summary>
+            Short name for the rule.
+            </summary>
+        </member>
+        <member name="P:Gendarme.Framework.IRule.FullName">
+            <summary>
+            Unique name for the rule.
+            </summary>
+        </member>
+        <member name="P:Gendarme.Framework.IRule.Uri">
+            <summary>
+            URI to the rule documentation.
+            </summary>
+        </member>
+        <member name="P:Gendarme.Framework.IRule.Problem">
+            <summary>
+            Short abstract of the problem that the rule is looking for.
+            For a complete description end-users should read the documentation URI.
+            </summary>
+        </member>
+        <member name="P:Gendarme.Framework.IRule.Solution">
+            <summary>
+            Short abstract of the solution to this problem. For a complete solution
+            with examples (both good and bad) end-users should read the documentation URI.
+            </summary>
+        </member>
+        <member name="M:Gendarme.Framework.IRule.Initialize(Gendarme.Framework.IRunner)">
+            <summary>
+            The runner will initialize each rule before starting analyzing any assembly.
+            </summary>
+            <param name="runner">Runner that will execute the rule during analysis.</param>
+        </member>
+        <member name="M:Gendarme.Framework.IRule.TearDown">
+            <summary>
+            The runner will call TearDown on every rule once the analysis is over.
+            This is the last chance to report defects to the runner and the best place to clean up
+            any temporary data (that is not required for reporting).
+            This will be called even if Initialize was not called on the rule (e.g. an unused rule).
+            </summary>
+        </member>
+        <member name="P:Gendarme.Framework.IRule.ApplicabilityScope">
+            <summary>
+            Defines the how the rule are going to be applied to a
+            target according its visibility modifier.
+            </summary>
+        </member>
+        <member name="T:Gendarme.Framework.IRunner">
+            <summary>
+            Rules will have access to the runner thru this interface.
+            This makes it possible, to anyone, to make it's own runner without using
+            the provided base class.
+            </summary>
+        </member>
+        <member name="P:Gendarme.Framework.IRunner.Rules">
+            <summary>
+            This expose the list of rules, so rules can also act on them.
+            E.g. Rule X is a superset of rule Y so Y disable itself is X is present
+            </summary>
+        </member>
+        <member name="P:Gendarme.Framework.IRunner.Assemblies">
+            <summary>
+            This expose the list of assemblies so rules can act on them as "a set".
+            E.g. applying a rule based on data outside the current assembly
+            </summary>
+        </member>
+        <member name="P:Gendarme.Framework.IRunner.CurrentRuleResult">
+            <summary>
+            Helper property to avoid each rule having it's own state/logic about
+            the result (RuleResult.Success or RuleResult.Failure) of its analysis
+            </summary>
+        </member>
+        <member name="T:Gendarme.Framework.Rule">
+            <summary>
+            Most rules should be able to inherit from Rule and implement one of the
+            <c>IAssemblyRule</c>, <c>ITypeRule</c> or <c>IMethodRule</c> and override
+            the Check[Assembly|Type|Method] method.
+            </summary>
+        </member>
+        <member name="P:Gendarme.Framework.Rule.Active">
+            <summary>
+            Return true if the rule is currently active, false otherwise.
+            </summary>
+        </member>
+        <member name="P:Gendarme.Framework.Rule.Runner">
+            <summary>
+            Return the runner executing the rule. This is helpful to get information
+            outside the rule, like the list of assemblies being analyzed.
+            </summary>
+        </member>
+        <member name="P:Gendarme.Framework.Rule.Name">
+            <summary>
+            Return the short name of the rule.
+            By default this returns the name of the current class.
+            </summary>
+        </member>
+        <member name="P:Gendarme.Framework.Rule.FullName">
+            <summary>
+            Return the full name of the rule.
+            By default this returns the full name of the current class.
+            </summary>
+        </member>
+        <member name="P:Gendarme.Framework.Rule.Uri">
+            <summary>
+            Return an Uri instance to the rule documentation.
+            By default, if no [DocumentationUri] attribute is used on the rule, this returns:
+            http://www.mono-project.com/{rule name space}#{rule name}
+            </summary>
+        </member>
+        <member name="M:Gendarme.Framework.Rule.Initialize(Gendarme.Framework.IRunner)">
+            <summary>
+            Initialize the rule. This is where rule can do it's heavy initialization
+            since the assemblies to be analyzed are already known (and accessible thru
+            the runner parameter).
+            </summary>
+            <param name="runner">The runner that will execute this rule.</param>
+        </member>
+        <member name="F:Gendarme.Framework.RuleResult.DoesNotApply">
+            <summary>
+            Rules returns this if the required conditions to execute
+            are not matched. This is useful to make rules more
+            readable (it's not a real success) and for statistics.
+            </summary>
+        </member>
+        <member name="F:Gendarme.Framework.RuleResult.Success">
+            <summary>
+            Rules returns this if it has executed its logic and has
+            not found any defect.
+            </summary>
+        </member>
+        <member name="F:Gendarme.Framework.RuleResult.Failure">
+            <summary>
+            Rules returns this if it has executed its logic and has
+            found one or more defects.
+            </summary>
+        </member>
+        <member name="F:Gendarme.Framework.RuleResult.Abort">
+            <summary>
+            Rules should never report this. The framework will use
+            this value to track errors in rule execution.
+            </summary>
+        </member>
+        <member name="P:Gendarme.Framework.Runner.CurrentRuleResult">
+            <summary>
+            </summary>
+            <returns>Return RuleResult.Failure is the number of defects has grown since
+            the rule Check* method was called or RuleResult.Success otherwise</returns>
+        </member>
+        <member name="M:Gendarme.Framework.Runner.Run">
+            <summary>
+            For all assemblies, every modules in each assembly, every
+            type in each module, every methods in each type call all
+            applicable rules.
+            </summary>
+        </member>
+        <member name="T:Gendarme.Framework.Severity">
+            <summary>
+            How severe is a defect found by the rule.
+            </summary>
+        </member>
+        <member name="F:Gendarme.Framework.Severity.Critical">
+            <summary>
+            The code can not work as expected.
+            </summary>
+        </member>
+        <member name="F:Gendarme.Framework.Severity.High">
+            <summary>
+            The code may work or fails depending on values, configuration...
+            </summary>
+        </member>
+        <member name="F:Gendarme.Framework.Severity.Medium">
+            <summary>
+            The code will work most of the time or on the default, or most, common configuration
+            </summary>
+        </member>
+        <member name="F:Gendarme.Framework.Severity.Low">
+            <summary>
+            The actual code works, fixing the defect doesn't have a big impact.
+            By default some runners won't display such low severity issues to keep the number of defects to a reasonable level.
+            </summary>
+        </member>
+        <member name="F:Gendarme.Framework.Severity.Audit">
+            <summary>
+            The actual code works but should be reviewed for potential problems.
+            Often the code cannot be changed to satisfy the rule logic,
+            i.e. the rule will always report it unless the rule or defect is ignored.
+            </summary>
+        </member>
+        <member name="T:Gendarme.Framework.ThreadModel">
+            <summary>Used with <see cref="T:Gendarme.Framework.ThreadModelAttribute" />.</summary>
+        </member>
+        <member name="F:Gendarme.Framework.ThreadModel.MainThread">
+            <summary>The code may run safely only under the main thread.</summary>
+            <remarks>This is the default for code in the assemblies being checked.</remarks>
+        </member>
+        <member name="F:Gendarme.Framework.ThreadModel.SingleThread">
+            <summary>The code may run under a single arbitrary thread.</summary>
+        </member>
+        <member name="F:Gendarme.Framework.ThreadModel.Serializable">
+            <summary>The code may run under multiple threads, but only if the
+            execution is serialized (e.g. by user level locking).</summary>
+        </member>
+        <member name="F:Gendarme.Framework.ThreadModel.Concurrent">
+            <summary>The code may run under multiple threads concurrently without user
+            locking.</summary>
+            <remarks>This is the default for code in the System/Mono namespaces.</remarks>
+        </member>
+        <member name="F:Gendarme.Framework.ThreadModel.AllowEveryCaller">
+            <summary>Or this with the above for the rare cases where the code cannot be
+            shown to be correct using a static analysis.</summary>
+        </member>
+        <member name="T:Gendarme.Framework.ThreadModelAttribute">
+            <summary>Used to precisely specify the threading semantics of code.</summary>
+        </member>
+    </members>
+</doc>

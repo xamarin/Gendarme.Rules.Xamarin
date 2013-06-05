@@ -1,0 +1,83 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Gendarme.Rules.Globalization</name>
+    </assembly>
+    <members>
+        <member name="T:Gendarme.Rules.Globalization.AvoidUnusedInternalResourceRule">
+            <summary>
+            This rule will check for internally visible resources (resx) which are never called.
+            You should remove unused internal resources to avoid useless translations.
+            </summary>
+        </member>
+        <member name="T:Gendarme.Rules.Globalization.PreferIFormatProviderOverrideRule">
+            <summary>
+            This rule detects calls to method that could be changed to call an <c>override</c> accepting an
+            extra <c>System.IFormatProvider</c> or <c>System.Globalization.CultureInfo</c> parameter (the
+            later implements <c>System.IFormatProvider</c>).
+            Generally data displayed to the end user should be using
+            <c>System.Globalization.CultureInfo.CurrentCulture</c> while other data (e.g. used internally,
+            stored in files/databases) should use <c>System.Globalization.CultureInfo.InvariantCulture</c>.
+            The rule will ignore the following special methods:
+            <list><item><c>System.Activator.CreateInstance</c></item><item><c>System.Resources.ResourceManager.GetObject</c></item><item><c>System.Resources.ResourceManager.GetString</c></item></list></summary>
+            <example>
+            Bad example:
+            <code>
+            public bool Confirm (double amount)
+            {
+            	string msg = String.Format ("Accept payment of {0} ?", amount);
+            	Transaction.Log ("{0} {1}", DateTime.Now, amount);
+            	return Prompt (msg);
+            }
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            public bool Confirm (double amount)
+            {
+            	string msg = String.Format (CultureInfo.CurrentCulture, "Accept payment of {0} ?", amount);
+            	Transaction.Log (CultureInfo.InvariantCulture, "{0} {1}", DateTime.Now, amount);
+            	return Prompt (msg);
+            }
+            </code></example>
+        </member>
+        <member name="T:Gendarme.Rules.Globalization.PreferStringComparisonOverrideRule">
+            <summary>
+            This rule detects calls to method that could be changed to call an <c>override</c> accepting an
+            extra <c>System.StringComparison</c> parameter. Using the <c>override</c> makes the code easier
+            to maintain since it makes the intent clear on how the string needs to be compared.
+            It is even more important since the default string comparison rules have changed between
+            .NET 2.0 and .NET 4.0.
+            </summary>
+            <example>
+            Bad example:
+            <code>
+            public bool Check (string name)
+            {
+            	// it's not clear if the string comparison should be culture sensitive or not
+            	return (String.Compare (name, "Software") == 0);
+            }
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            public bool Check (string name)
+            {
+            	return (String.Compare (name, "Software", StringComparison.CurrentCulture) == 0);
+            }
+            </code></example>
+        </member>
+        <member name="T:Gendarme.Rules.Globalization.SatelliteResourceMismatchRule">
+            <summary>
+            A satellite assembly have a resource which does not match with a main assembly resource.
+            Either :
+            	* The resource doesn't exist in the main assembly and should be removed from the satellite assembly.
+            	* The resource is not of the same type in the main and satellite assembly. The satellite one should be fixed.
+            	* The satellite string resource does not have the same string.Format parameters than the main assembly. The satellite one should be fixed.
+            </summary>
+            <remarks>
+            The satellites assemblies are searched in the subdirectories of the main assembly location.
+            </remarks>
+        </member>
+    </members>
+</doc>

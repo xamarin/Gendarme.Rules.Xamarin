@@ -1,0 +1,138 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Gendarme.Rules.Gendarme</name>
+    </assembly>
+    <members>
+        <member name="T:Gendarme.Rules.Gendarme.DefectsMustBeReportedRule">
+            <summary>
+            This rule checks if at least one method in types implementing
+            IRule is calling Runner.Report.
+            </summary>
+            <example>
+            Bad example:
+            <code>
+            public class BadRule : Rule, ITypeRule
+            {
+            	public RuleResult CheckType (TypeDefinition type)
+            	{
+            		return RuleResult.Failure;
+            	}
+            }
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            public class BadRule : Rule, ITypeRule
+            {
+            	public RuleResult CheckType (TypeDefinition type)
+            	{
+            		Runner.Report(type, Severity.Low, Confidence.Total);
+            		return RuleResult.Failure;
+            	}
+            }
+            </code></example>
+            <remarks>
+            This rule checks if Runner.Report is called directly anywhere in rules' methods but it does not
+            check if it being called in the base type or somewhere else, so some false positives are possible.</remarks>
+        </member>
+        <member name="T:Gendarme.Rules.Gendarme.DoNotThrowExceptionRule">
+            <summary>
+            This rule finds Gendarme rules that throw exceptions because runner's behavior
+            in case of rule throwing an exception is undefined.
+            </summary>
+            <example>
+            Bad example:
+            <code>
+            public class ExampleRule : Rule, IMethodRule {
+            	public RuleResult CheckMethod (MethodDefinition method)
+            	{
+            		if (method == null)
+            			throw new ArgumentNullException ("method");
+            		// other rule logic
+            	}
+            }
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            public class ExampleRule : Rule, IMethodRule {
+            	public RuleResult CheckMethod (MethodDefinition method)
+            	{
+            		// method is not null by contract
+            		return RuleResult.Success;
+            	}
+            }
+            </code></example>
+        </member>
+        <member name="T:Gendarme.Rules.Gendarme.MissingEngineDependencyRule">
+            <summary>
+            Rules should not use engines' features without subscribing to them
+            using EngineDependency attribute because it will not work unless
+            another rule has subscribed to the same engine.
+            </summary>
+            <example>
+            Bad example:
+            <code>
+            class BadRule : Rule, IMethodRule {
+            	public RuleResult CheckMethod (MethodDefinition method)
+            	{
+            		if (!OpCodeBitmask.Calls.Intersect (OpCodeEngine.GetBitmask (method)))
+            			return RuleResult.DoesNotApply;
+            		// rule code
+            	}
+            }
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            [EngineDependency (typeof (OpCodeEngine))]
+            class BadRule : Rule, IMethodRule {
+            	public RuleResult CheckMethod (MethodDefinition method)
+            	{
+            		if (!OpCodeBitmask.Calls.Intersect (OpCodeEngine.GetBitmask (method)))
+            			return RuleResult.DoesNotApply;
+            		// rule code
+            	}
+            }
+            </code></example>
+        </member>
+        <member name="T:Gendarme.Rules.Gendarme.ReviewAttributesOnRulesRule">
+            <summary>
+            This rule checks if attribute usage match the following rules:
+            <list><item><term>[Problem] and [Solution] attributes</term><description>should be used on rules only, every concrete rule must have both
+            attributes (or inherit them), and their arguments cannot be null or empty
+            </description></item><item><term>[FxCopCompatibility] attribute</term><description>should be used on rules only, its arguments cannot be null or empty,
+            and second argument should match this format: AB1234:FxCopRuleName</description></item><item><term>[EngineDependency] attribute</term><description>should be used on rules only, its argument cannot be null or empty,
+            and its argument should inherit from Gendarme.Framework.Engine</description></item><item><term>[DocumentationUri] attribute</term><description>should be used on rules only</description></item><item><term>[Description] and [DefaultValue] attributes</term><description>should be used on rules' public properties only,
+            Description attribute argument cannot be null or empty</description></item></list></summary>
+        </member>
+        <member name="T:Gendarme.Rules.Gendarme.UseCorrectSuffixRule">
+            <summary>
+            Types implementing IRule should have the "Rule" suffix, while other types
+            are not allowed to have this suffix.
+            </summary>
+            <example>
+            Bad example (rule type does not have a suffix):
+            <code>
+            public class ReviewSomething : Rule, IMethodRule {
+            	// rule code
+            }
+            </code></example>
+            <example>
+            Bad example (non-rule type has a suffix):
+            <code>
+            public class SomeRule {
+            	// class code
+            }
+            </code></example>
+            <example>
+            Good example:
+            <code>
+            public class ReviewSomethingRule : Rule, IMethodRule {
+            	// rule code
+            }
+            </code></example>
+        </member>
+    </members>
+</doc>
