@@ -9,7 +9,7 @@ This project currently requires .NET 4.x/Mono 3.x.
 A release build of the Gendarme 2.11 and the standard 
 rules assemblies are included for convenience.
 
-`cd src`
+`cd src`  
 `xbuild`
 
 The `Gendarme.Rules.Xamarin.dll` assembly will be output into `bin`.
