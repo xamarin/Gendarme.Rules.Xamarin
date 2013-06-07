@@ -20,7 +20,7 @@ namespace Gendarme.Rules.Xamarin
 			// This is seen as warning MT0011.
 			var result = CheckForMT0011 (assembly);
 			if (result)
-				Runner.Report (assembly, Severity.Critical, Confidence.High, "This assembly targets MonoTouch,Version=v4.0, which is not a stable release (MT0011).");
+				Runner.Report (assembly, Severity.Critical, Confidence.High, "This assembly targets the .NET 4.0 runtime, but stable release targets the .NET 2.0 runtime (MT0011).");
 
 			// Now we attempt to detect the use of type/members that were not available in MonoTouch 6.2.x.
 			// There's no point in checking if we already know we have a violation.
@@ -35,9 +35,7 @@ namespace Gendarme.Rules.Xamarin
 
 		static bool CheckForMT0011 (AssemblyDefinition assembly)
 		{
-			return assembly.CustomAttributes.Any (attrib => attrib.AttributeType.Name == "TargetFrameworkAttribute" 
-                      && attrib.ConstructorArguments.Any (carg => carg.Value.Equals ("MonoTouch,Version=v4.0"))
-                      );
+			return assembly.MainModule.Runtime > TargetRuntime.Net_2_0;
 		}
 
 		/// <summary>
