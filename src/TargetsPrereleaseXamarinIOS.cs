@@ -12,8 +12,14 @@ namespace Gendarme.Rules.Xamarin
 	[Solution ("Rebuild the assemby using Xamarin.iOS 6.2.x.")]
 	public sealed class TargetsPrereleaseXamarinIOS : Rule, IAssemblyRule
 	{
+		internal static readonly byte[] XamarinRuntimeAssemblyToken = new byte[] { 0x84, 0xE0, 0x4F, 0xF9, 0xCF, 0xB7, 0x90, 0x65 };
+
 		public RuleResult CheckAssembly (AssemblyDefinition assembly)
 		{
+			// Short circuit for non-Xamarin targets (e.g. winrt, wp8).
+			if (!TargetsPrereleaseXamarinIOS.TargetsXamarinPlatforms (assembly))
+				return RuleResult.DoesNotApply;
+
 			// Look for the TargetPlatform attribute, which indicates
 			// .NET 4.0 support. This is only available in XI 6.3+.
 			// e.g. TargetFramework ("MonoTouch,Version=v4.0", DisplayName = "MonoTouch")
@@ -59,6 +65,16 @@ namespace Gendarme.Rules.Xamarin
 				result = true;
 
 			return result;
+		}
+
+		/// <summary>
+		/// Ensures that we are targeting monotouch.dll or Mono.Android.dll.
+		/// </summary>
+		/// <returns><c>true</c>, if xamarin platforms was targetsed, <c>false</c> otherwise.</returns>
+		/// <param name="assembly">Assembly.</param>
+		static bool TargetsXamarinPlatforms (AssemblyDefinition assembly)
+		{
+			return assembly.MainModule.AssemblyReferences.Any (aref => aref.PublicKeyToken.Equals (XamarinRuntimeAssemblyToken));
 		}
 	}
 }
