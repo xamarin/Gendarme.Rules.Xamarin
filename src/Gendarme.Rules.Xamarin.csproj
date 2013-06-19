@@ -30,16 +30,24 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <ConsolePause>false</ConsolePause>
+    <CustomCommands>
+      <CustomCommands>
+        <Command type="Build" command="cp lib/* ${TargetDir}" workingdir="${SolutionDir}/../" externalConsole="True" />
+        <Command type="AfterClean" command="ls lib &gt; temp; cd bin; cat ../temp | xargs -o rm -f ; cd ..; rm temp" workingdir="${SolutionDir}/../" externalConsole="True" />
+      </CustomCommands>
+    </CustomCommands>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="mscorlib" />
     <Reference Include="System.Core" />
     <Reference Include="Gendarme.Framework">
-      <HintPath>..\bin\Gendarme.Framework.dll</HintPath>
+      <HintPath>..\lib\Gendarme.Framework.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="Mono.Cecil">
-      <HintPath>..\bin\Mono.Cecil.dll</HintPath>
+      <HintPath>..\lib\Mono.Cecil.dll</HintPath>
+      <Private>False</Private>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -48,7 +56,7 @@
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
-    <None Include="..\bin\rules.xml">
+    <None Include="..\lib\rules.xml">
       <Link>rules.xml</Link>
     </None>
   </ItemGroup>
