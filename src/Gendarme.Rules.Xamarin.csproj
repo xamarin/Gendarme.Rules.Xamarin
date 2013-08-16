@@ -20,7 +20,8 @@
     <ConsolePause>false</ConsolePause>
     <CustomCommands>
       <CustomCommands>
-        <Command type="Custom" name="Run Gendarme" command="${SolutionDir}/../bin/gendarme.exe --set xamarin /Users/zgramana/Xamarin/Tests/Components/NetworkComms.Net-2.3.0/lib/ios/NetworkCommsDotNetCore.dll" workingdir="${SolutionDir}/../bin/" />
+        <Command type="Execute" command="${SolutionDir}/../bin/gendarme.exe --set component-store --severity critical /Users/zgramana/Xamarin/Tests/Components/examples/lib/ios/Target.1.dll" workingdir="${SolutionDir}/../bin" />
+        <Command type="Clean" />
       </CustomCommands>
     </CustomCommands>
   </PropertyGroup>
@@ -32,8 +33,9 @@
     <ConsolePause>false</ConsolePause>
     <CustomCommands>
       <CustomCommands>
-        <Command type="Build" command="cp lib/* ${TargetDir}" workingdir="${SolutionDir}/../" externalConsole="True" />
+        <Command type="AfterBuild" command="cp lib/* ${TargetDir}" workingdir="${SolutionDir}/../" externalConsole="True" />
         <Command type="AfterClean" command="ls lib &gt; temp; cd bin; cat ../temp | xargs -o rm -f ; cd ..; rm temp" workingdir="${SolutionDir}/../" externalConsole="True" />
+        <Command type="Execute" command="${SolutionDir}/../bin/gendarme.exe --set component-store --severity critical --confidence high /Users/zgramana/Xamarin/Tests/Components/examples/lib/ios/Target.1.dll" workingdir="${SolutionDir}/../bin" />
       </CustomCommands>
     </CustomCommands>
   </PropertyGroup>

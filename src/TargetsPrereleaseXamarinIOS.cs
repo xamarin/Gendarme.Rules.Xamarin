@@ -17,7 +17,7 @@ namespace Gendarme.Rules.Xamarin
 		public RuleResult CheckAssembly (AssemblyDefinition assembly)
 		{
 			// Short circuit for non-Xamarin targets (e.g. winrt, wp8).
-			if (!TargetsPrereleaseXamarinIOS.TargetsXamarinPlatforms (assembly))
+			if (!TargetsPrereleaseXamarinIOS.TargetsXamarin (assembly))
 				return RuleResult.DoesNotApply;
 
 			// Look for the TargetPlatform attribute, which indicates
@@ -55,13 +55,20 @@ namespace Gendarme.Rules.Xamarin
 		static bool CheckForMT2002 (AssemblyDefinition assembly)
 		{
 			var result = false;
+
 			// We need to see if this module's member references table
 			// has an entry to a method that we know was not implemented
 			// in Stable, but was implemented in Beta or Alpha.
 			var refs = assembly.MainModule.GetMemberReferences ();
+			var types = assembly.MainModule.GetTypeReferences ();
 
-			var badRef = refs.SingleOrDefault (m => m.FullName == "System.Boolean System.Type::op_Equality(System.Type,System.Type)");
-			if (badRef != null)
+			if (refs.Any (m => m.FullName == "System.Boolean System.Type::op_Equality(System.Type,System.Type)"))
+				result = true;
+
+			// In .NET 4.5, System.Runtime.CompilerServices.ExtensionAttribute was moved to mscorelib.
+			// In previous versions, it lived in System.core.
+			else if (types.Any (t => t.FullName == "System.Runtime.CompilerServices.ExtensionAttribute" 
+			                      && t.Scope.Name == "mscorlib"))
 				result = true;
 
 			return result;
@@ -72,9 +79,9 @@ namespace Gendarme.Rules.Xamarin
 		/// </summary>
 		/// <returns><c>true</c>, if xamarin platforms was targetsed, <c>false</c> otherwise.</returns>
 		/// <param name="assembly">Assembly.</param>
-		static bool TargetsXamarinPlatforms (AssemblyDefinition assembly)
+		static bool TargetsXamarin (AssemblyDefinition assembly)
 		{
-			return assembly.MainModule.AssemblyReferences.Any (aref => aref.PublicKeyToken.Equals (XamarinRuntimeAssemblyToken));
+			return assembly.MainModule.AssemblyReferences.Any (aref =>  aref.PublicKeyToken.SequenceEqual (XamarinRuntimeAssemblyToken));
 		}
 	}
 }

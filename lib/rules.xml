@@ -50,7 +50,7 @@
 			| ReviewMisleadingFieldNamesRule | VariableNamesShouldNotMatchFieldNamesRule" 
 			from="Gendarme.Rules.Maintainability.dll"/>
 		<rules include="*" from="Gendarme.Rules.Globalization.dll"/>
-		<rules include="*" from="Gendarme.Rules.Xamarin.dll"/>
+		<!-- rules include="*" from="Gendarme.Rules.Xamarin.dll" -->
 		<!-- no rule from Gendarme.Rules.Gendarme is included in this set -->
 		<!-- no rule from Gendarme.Rules.Interoperability.Com is included in this set -->
 		<!-- no rule from Gendarme.Rules.NUnit is included in this set -->
